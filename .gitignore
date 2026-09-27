@@ -25,3 +25,9 @@ build/
 tools/private-key.pem
 
 mobile/local.properties
+
+# Local Hesbah data
+online/data/*.json
+
+# Nested test repository
+Hesbah-Online/
