@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Hesbah Online</title>
+
+  <style>
+    *{
+      box-sizing:border-box;
+      font-family:Tahoma,Arial,sans-serif;
+    }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      background:#f4f6f8;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .box{
+      width:100%;
+      max-width:430px;
+      background:#fff;
+      border-radius:18px;
+      padding:30px;
+      box-shadow:0 10px 35px rgba(0,0,0,.10);
+    }
+
+    .logo{
+      text-align:center;
+      font-size:32px;
+      font-weight:bold;
+      margin-bottom:8px;
+    }
+
+    .subtitle{
+      text-align:center;
+      color:#777;
+      margin-bottom:25px;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      margin-bottom:20px;
+    }
+
+    .tabs button{
+      flex:1;
+      border:0;
+      padding:12px;
+      border-radius:10px;
+      cursor:pointer;
+      background:#eee;
+      font-size:15px;
+    }
+
+    .tabs button.active{
+      background:#111;
+      color:#fff;
+    }
+
+    .field{
+      margin-bottom:14px;
+    }
+
+    .field label{
+      display:block;
+      margin-bottom:6px;
+      font-weight:bold;
+    }
+
+    .field input{
+      width:100%;
+      padding:13px;
+      border:1px solid #ddd;
+      border-radius:10px;
+      outline:none;
+      font-size:15px;
+    }
+
+    .field input:focus{
+      border-color:#111;
+    }
+
+    .btn{
+      width:100%;
+      border:0;
+      background:#111;
+      color:#fff;
+      padding:14px;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:16px;
+      margin-top:8px;
+    }
+
+    .message{
+      margin-top:15px;
+      padding:12px;
+      border-radius:10px;
+      display:none;
+      text-align:center;
+    }
+
+    .success{
+      background:#e8f7ed;
+      color:#19733a;
+    }
+
+    .error{
+      background:#fdeaea;
+      color:#a52222;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <div class="logo">Hesbah</div>
+
+  <div class="subtitle">
+    اطلب احتياجاتك بسهولة من المتجر
+  </div>
+
+  <div class="tabs">
+    <button id="loginTab" class="active" onclick="showLogin()">
+      تسجيل الدخول
+    </button>
+
+    <button id="registerTab" onclick="showRegister()">
+      حساب جديد
+    </button>
+  </div>
+
+  <div id="loginForm">
+
+    <div class="field">
+      <label>رقم الهاتف</label>
+      <input id="loginPhone" type="tel" placeholder="رقم الهاتف">
+    </div>
+
+    <div class="field">
+      <label>كلمة المرور</label>
+      <input id="loginPassword" type="password" placeholder="كلمة المرور">
+    </div>
+
+    <button class="btn" onclick="login()">
+      دخول
+    </button>
+
+  </div>
+
+  <div id="registerForm" style="display:none">
+
+    <div class="field">
+      <label>الاسم</label>
+      <input id="registerName" type="text" placeholder="الاسم بالكامل">
+    </div>
+
+    <div class="field">
+      <label>رقم الهاتف</label>
+      <input id="registerPhone" type="tel" placeholder="رقم الهاتف">
+    </div>
+
+    <div class="field">
+      <label>كلمة المرور</label>
+      <input id="registerPassword" type="password" placeholder="6 أحرف على الأقل">
+    </div>
+
+    <button class="btn" onclick="register()">
+      إنشاء الحساب
+    </button>
+
+  </div>
+
+  <div id="message" class="message"></div>
+
+</div>
+
+<script>
+
+const API = "";
+
+function showMessage(text,type){
+
+  const box=document.getElementById("message");
+
+  box.textContent=text;
+
+  box.className="message "+type;
+
+  box.style.display="block";
+}
+
+function showLogin(){
+
+  document.getElementById("loginForm").style.display="block";
+  document.getElementById("registerForm").style.display="none";
+
+  document.getElementById("loginTab").classList.add("active");
+  document.getElementById("registerTab").classList.remove("active");
+
+  document.getElementById("message").style.display="none";
+}
+
+function showRegister(){
+
+  document.getElementById("loginForm").style.display="none";
+  document.getElementById("registerForm").style.display="block";
+
+  document.getElementById("loginTab").classList.remove("active");
+  document.getElementById("registerTab").classList.add("active");
+
+  document.getElementById("message").style.display="none";
+}
+
+async function register(){
+
+  const name=document.getElementById("registerName").value.trim();
+  const phone=document.getElementById("registerPhone").value.trim();
+  const password=document.getElementById("registerPassword").value;
+
+  if(!name || !phone || !password){
+    showMessage("من فضلك أكمل جميع البيانات","error");
+    return;
+  }
+
+  try{
+
+    const response=await fetch(API+"/api/public/register",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        storeId:"demo",
+        name,
+        phone,
+        password
+      })
+    });
+
+    const data=await response.json();
+
+    if(!response.ok || !data.ok){
+      showMessage(data.message || "فشل إنشاء الحساب","error");
+      return;
+    }
+
+    showMessage("تم إنشاء الحساب بنجاح","success");
+
+    document.getElementById("registerName").value="";
+    document.getElementById("registerPhone").value="";
+    document.getElementById("registerPassword").value="";
+
+    setTimeout(()=>{
+      showLogin();
+    },1000);
+
+  }catch(error){
+
+    showMessage(
+      "تعذر الاتصال بالسيرفر",
+      "error"
+    );
+
+  }
+
+}
+
+async function login(){
+
+  const phone=document.getElementById("loginPhone").value.trim();
+  const password=document.getElementById("loginPassword").value;
+
+  if(!phone || !password){
+    showMessage("أدخل رقم الهاتف وكلمة المرور","error");
+    return;
+  }
+
+  try{
+
+    const response=await fetch(API+"/api/public/login",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        storeId:"demo",
+        phone,
+        password
+      })
+    });
+
+    const data=await response.json();
+
+    if(!response.ok || !data.ok){
+      showMessage(data.message || "بيانات الدخول غير صحيحة","error");
+      return;
+    }
+
+    localStorage.setItem(
+      "hesbah_customer_token",
+      data.token
+    );
+
+    localStorage.setItem(
+      "hesbah_customer",
+      JSON.stringify(data.customer)
+    );
+
+    showMessage(
+      "تم تسجيل الدخول بنجاح",
+      "success"
+    );
+
+    setTimeout(()=>{
+      alert(
+        "أهلاً بك "+data.customer.name+
+        "\n\nتم تسجيل الدخول بنجاح."
+      );
+    },500);
+
+  }catch(error){
+
+    showMessage(
+      "تعذر الاتصال بالسيرفر",
+      "error"
+    );
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>

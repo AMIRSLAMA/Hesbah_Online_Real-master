@@ -1,0 +1,3502 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hesbah Online</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<style>
+*{
+  box-sizing:border-box
+}
+
+body{
+  margin:0;
+  font-family:Tahoma,Arial,sans-serif;
+  background:#f4f6f9;
+  color:#222
+}
+
+button,
+input{
+  font-family:inherit
+}
+
+.hidden{
+  display:none!important
+}
+
+/* =========================
+   Header
+========================= */
+
+.header{
+  background:#111827;
+  color:white;
+  padding:15px 20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  position:sticky;
+  top:0;
+  z-index:20
+}
+
+.logo{
+  font-size:23px;
+  font-weight:bold
+}
+
+.header-user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:14px
+}
+
+.logout{
+  border:0;
+  background:#ef4444;
+  color:white;
+  padding:8px 13px;
+  border-radius:8px;
+  cursor:pointer
+}
+
+/* =========================
+   Login / Register
+========================= */
+
+.auth-wrap{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px
+}
+
+.auth-box{
+  width:100%;
+  max-width:430px;
+  background:white;
+  border-radius:18px;
+  padding:28px;
+  box-shadow:0 10px 35px rgba(0,0,0,.1)
+}
+
+.auth-title{
+  text-align:center;
+  font-size:28px;
+  font-weight:bold;
+  margin-bottom:8px
+}
+
+.auth-subtitle{
+  text-align:center;
+  color:#777;
+  margin-bottom:25px
+}
+
+.tabs{
+  display:flex;
+  gap:5px;
+  background:#f1f3f5;
+  padding:5px;
+  border-radius:10px;
+  margin-bottom:20px
+}
+
+.tab{
+  flex:1;
+  border:0;
+  background:transparent;
+  padding:11px;
+  cursor:pointer;
+  border-radius:8px;
+  font-weight:bold
+}
+
+.tab.active{
+  background:#111827;
+  color:white
+}
+
+.field{
+  margin-bottom:14px
+}
+
+.field label{
+  display:block;
+  margin-bottom:6px;
+  font-weight:bold;
+  font-size:14px
+}
+
+.field input{
+  width:100%;
+  padding:12px;
+  border:1px solid #d1d5db;
+  border-radius:9px;
+  outline:none;
+  font-size:15px
+}
+
+.field input:focus{
+  border-color:#2563eb
+}
+
+.main-btn{
+  width:100%;
+  border:0;
+  background:#2563eb;
+  color:white;
+  padding:13px;
+  border-radius:9px;
+  cursor:pointer;
+  font-size:16px;
+  font-weight:bold
+}
+
+.main-btn:disabled{
+  opacity:.6;
+  cursor:not-allowed
+}
+
+.message{
+  margin-top:12px;
+  padding:10px;
+  border-radius:8px;
+  display:none;
+  text-align:center
+}
+
+.message.error{
+  display:block;
+  background:#fee2e2;
+  color:#991b1b
+}
+
+.message.success{
+  display:block;
+  background:#dcfce7;
+  color:#166534
+}
+
+/* =========================
+   Store
+========================= */
+
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:20px
+}
+
+.welcome{
+  background:white;
+  border-radius:15px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow:0 3px 15px rgba(0,0,0,.05)
+}
+
+.welcome h2{
+  margin:0 0 8px
+}
+
+.welcome p{
+  margin:0;
+  color:#777
+}
+
+.products-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+  gap:10px;
+  flex-wrap:wrap
+}
+
+.products-title h2{
+  margin:0
+}
+
+.cart-btn{
+  border:0;
+  background:#16a34a;
+  color:white;
+  padding:11px 16px;
+  border-radius:9px;
+  cursor:pointer;
+  font-weight:bold
+}
+
+.products{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
+  gap:16px
+}
+
+.product{
+  background:white;
+  border-radius:15px;
+  overflow:hidden;
+  box-shadow:0 3px 15px rgba(0,0,0,.06);
+  position:relative
+}
+
+.product-img{
+  height:160px;
+  background:#eef2f7;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden
+}
+
+.product-img img{
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+
+.product-placeholder{
+  font-size:55px;
+  color:#9ca3af
+}
+
+.product-body{
+  padding:15px
+}
+
+.product-name{
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:8px
+}
+
+.product-price{
+  font-size:18px;
+  font-weight:bold;
+  color:#2563eb;
+  margin-bottom:5px
+}
+
+.product-unit{
+  color:#777;
+  font-size:13px;
+  margin-bottom:12px
+}
+
+.add-btn{
+  width:100%;
+  border:0;
+  background:#2563eb;
+  color:white;
+  padding:10px;
+  border-radius:8px;
+  cursor:pointer
+}
+
+.add-btn:disabled{
+  background:#9ca3af;
+  cursor:not-allowed
+}
+
+.unavailable{
+  position:absolute;
+  top:10px;
+  right:10px;
+  background:#dc2626;
+  color:white;
+  padding:5px 9px;
+  border-radius:7px;
+  font-size:12px;
+  font-weight:bold
+}
+
+.loading{
+  text-align:center;
+  padding:40px;
+  color:#777
+}
+
+/* =========================
+   Modal
+========================= */
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:15px;
+  z-index:100
+}
+
+.modal-box{
+  width:100%;
+  max-width:600px;
+  max-height:90vh;
+  overflow:auto;
+  background:white;
+  border-radius:16px;
+  padding:20px
+}
+
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px
+}
+
+.close{
+  border:0;
+  background:#eee;
+  width:35px;
+  height:35px;
+  border-radius:50%;
+  cursor:pointer;
+  font-size:20px
+}
+
+/* =========================
+   Cart
+========================= */
+
+.cart-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:12px 0;
+  border-bottom:1px solid #eee
+}
+
+.cart-info{
+  flex:1
+}
+
+.cart-name{
+  font-weight:bold
+}
+
+.cart-price{
+  color:#2563eb;
+  font-size:14px;
+  margin-top:4px
+}
+
+.qty{
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+
+.qty button{
+  width:30px;
+  height:30px;
+  border:0;
+  border-radius:6px;
+  background:#e5e7eb;
+  cursor:pointer;
+  font-weight:bold
+}
+
+.total{
+  display:flex;
+  justify-content:space-between;
+  padding:15px 0;
+  font-size:19px;
+  font-weight:bold
+}
+
+.empty{
+  text-align:center;
+  color:#777;
+  padding:30px
+}
+
+.footer{
+  text-align:center;
+  color:#888;
+  padding:30px 10px
+}
+
+/* =========================
+   Mobile
+========================= */
+
+@media(max-width:600px){
+
+  .header{
+    padding:12px
+  }
+
+  .header-user{
+    font-size:12px
+  }
+
+  .container{
+    padding:12px
+  }
+
+  .products{
+    grid-template-columns:repeat(2,1fr);
+    gap:10px
+  }
+
+  .product-img{
+    height:120px
+  }
+
+  .product-body{
+    padding:10px
+  }
+
+  .product-name{
+    font-size:15px
+  }
+
+  .product-price{
+    font-size:16px
+  }
+
+  .auth-box{
+    padding:20px
+  }
+}
+
+/* =========================
+   متابعة الطلب والتوصيل
+========================= */
+.order-tracking{
+  margin-top:18px;
+  text-align:right;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  padding:16px;
+}
+.order-tracking h3{margin:0 0 14px}
+.tracking-steps{
+  display:grid;
+  gap:9px;
+}
+.tracking-step{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:10px;
+  background:#f3f4f6;
+  color:#6b7280;
+}
+.tracking-step.active{
+  background:#dbeafe;
+  color:#1d4ed8;
+  font-weight:bold;
+}
+.tracking-step.done{
+  background:#dcfce7;
+  color:#166534;
+}
+.tracking-map{
+  width:100%;
+  height:320px;
+  margin-top:14px;
+  border-radius:12px;
+  overflow:hidden;
+  display:none;
+}
+.tracking-info{
+  margin-top:10px;
+  color:#555;
+  font-size:14px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- =========================
+     Login / Register
+========================= -->
+
+<div id="authPage" class="auth-wrap">
+
+  <div class="auth-box">
+
+    <div class="auth-title">
+      Hesbah
+    </div>
+
+    <div class="auth-subtitle">
+      اطلب منتجاتك بسهولة
+    </div>
+
+    <div class="tabs">
+
+      <button
+        id="loginTab"
+        class="tab active"
+        onclick="showLogin()"
+      >
+        تسجيل الدخول
+      </button>
+
+      <button
+        id="registerTab"
+        class="tab"
+        onclick="showRegister()"
+      >
+        حساب جديد
+      </button>
+
+    </div>
+
+    <!-- Login -->
+
+    <div id="loginForm">
+
+      <div class="field">
+
+        <label>
+          رقم الهاتف
+        </label>
+
+        <input
+          id="loginPhone"
+          type="tel"
+          placeholder="أدخل رقم الهاتف"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          كلمة المرور
+        </label>
+
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="أدخل كلمة المرور"
+        >
+
+      </div>
+
+      <button
+        id="loginBtn"
+        class="main-btn"
+        onclick="loginCustomer()"
+      >
+        تسجيل الدخول
+      </button>
+
+      <div
+        id="loginMessage"
+        class="message"
+      ></div>
+
+    </div>
+
+    <!-- Register -->
+
+    <div
+      id="registerForm"
+      class="hidden"
+    >
+
+      <div class="field">
+
+        <label>
+          الاسم
+        </label>
+
+        <input
+          id="registerName"
+          type="text"
+          placeholder="اسم العميل"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          رقم الهاتف
+        </label>
+
+        <input
+          id="registerPhone"
+          type="tel"
+          placeholder="رقم الهاتف"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          كلمة المرور
+        </label>
+
+        <input
+          id="registerPassword"
+          type="password"
+          placeholder="6 أحرف على الأقل"
+        >
+
+      </div>
+
+      <button
+        id="registerBtn"
+        class="main-btn"
+        onclick="registerCustomer()"
+      >
+        إنشاء الحساب
+      </button>
+
+      <div
+        id="registerMessage"
+        class="message"
+      ></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================
+     Store Page
+========================= -->
+
+<div
+  id="storePage"
+  class="hidden"
+>
+
+  <header class="header">
+
+    <div class="logo">
+      Hesbah
+    </div>
+
+    <div class="header-user">
+
+      <span id="customerName"></span>
+
+      <button
+        class="logout"
+        onclick="logoutCustomer()"
+      >
+        خروج
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main class="container">
+
+    <section class="welcome">
+
+      <h2>
+        أهلاً بك 👋
+      </h2>
+
+      <p>
+        اختار المنتجات التي تريدها وأضفها إلى السلة.
+      </p>
+
+    </section>
+
+
+    <div class="products-title">
+
+      <h2>
+        المنتجات
+      </h2>
+
+      <div>
+
+        <button
+          class="cart-btn"
+          onclick="openCart()"
+        >
+          🛒 السلة
+          <span id="cartCount">0</span>
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div
+      id="products"
+      class="products"
+    >
+
+      <div class="loading">
+        جاري تحميل المنتجات...
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <footer class="footer">
+    Hesbah Online
+  </footer>
+
+</div>
+
+
+<!-- =========================
+     Cart Modal
+========================= -->
+
+<div
+  id="cartModal"
+  class="modal hidden"
+  onclick="closeCartOutside(event)"
+>
+
+  <div class="modal-box">
+
+    <div class="modal-head">
+
+      <h2>
+        سلة المشتريات
+      </h2>
+
+      <button
+        class="close"
+        onclick="closeCart()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div id="cartItems"></div>
+
+
+    <div
+      id="cartTotal"
+      class="total"
+    >
+
+      <span>
+        الإجمالي
+      </span>
+
+      <span>
+        0 جنيه
+      </span>
+
+    </div>
+
+
+    <button
+      id="checkoutBtn"
+      class="main-btn"
+      onclick="checkout()"
+    >
+      متابعة الطلب
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+const STORE_ID = "demo";
+
+let customer = null;
+let customerToken = null;
+let products = [];
+let cart = [];
+
+let addMoreTimer = null;
+let trackingTimer = null;
+let trackingMap = null;
+let driverMarker = null;
+let customerMarker = null;
+let trackingLine = null;
+let pendingCustomerLocation = null;
+
+
+/* =========================
+   أدوات
+========================= */
+
+function $(id){
+  return document.getElementById(id);
+}
+
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+
+function showMessage(
+  id,
+  text,
+  type="error"
+){
+
+  const el = $(id);
+
+  if(!el){
+    return;
+  }
+
+  el.textContent = text;
+
+  el.className =
+    "message " + type;
+}
+
+
+function clearMessage(id){
+
+  const el = $(id);
+
+  if(!el){
+    return;
+  }
+
+  el.textContent = "";
+
+  el.className = "message";
+}
+
+
+/* =========================
+   Login / Register Tabs
+========================= */
+
+function showLogin(){
+
+  $("loginForm")
+    .classList
+    .remove("hidden");
+
+  $("registerForm")
+    .classList
+    .add("hidden");
+
+  $("loginTab")
+    .classList
+    .add("active");
+
+  $("registerTab")
+    .classList
+    .remove("active");
+
+  clearMessage("loginMessage");
+  clearMessage("registerMessage");
+}
+
+
+function showRegister(){
+
+  $("loginForm")
+    .classList
+    .add("hidden");
+
+  $("registerForm")
+    .classList
+    .remove("hidden");
+
+  $("loginTab")
+    .classList
+    .remove("active");
+
+  $("registerTab")
+    .classList
+    .add("active");
+
+  clearMessage("loginMessage");
+  clearMessage("registerMessage");
+}
+
+
+/* =========================
+   تسجيل الدخول
+========================= */
+
+async function loginCustomer(){
+
+  const phone =
+    $("loginPhone").value.trim();
+
+  const password =
+    $("loginPassword").value;
+
+  clearMessage("loginMessage");
+
+  if(!phone || !password){
+    showMessage(
+      "loginMessage",
+      "أدخل رقم الهاتف وكلمة المرور"
+    );
+    return;
+  }
+
+  const btn = $("loginBtn");
+
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = "جاري تسجيل الدخول...";
+  }
+
+  try{
+
+    const response = await fetch(
+      "/api/public/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          storeId: STORE_ID,
+          phone,
+          password
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(!response.ok || !data.ok){
+      showMessage(
+        "loginMessage",
+        data.message || "بيانات الدخول غير صحيحة"
+      );
+      return;
+    }
+
+    if(!data.token || !data.customer){
+      showMessage(
+        "loginMessage",
+        "السيرفر لم يُرجع بيانات تسجيل الدخول كاملة"
+      );
+      return;
+    }
+
+    customerToken = data.token;
+    customer = data.customer;
+
+    localStorage.setItem(
+      "hesbah_customer_token",
+      customerToken
+    );
+
+    localStorage.setItem(
+      "hesbah_customer",
+      JSON.stringify(customer)
+    );
+
+    // لا نمسح آخر طلب هنا؛ لو كان داخل مهلة الإضافة يظل متاحاً.
+    openStore();
+
+  }catch(error){
+
+    console.error("Login error:", error);
+
+    showMessage(
+      "loginMessage",
+      "تعذر الاتصال بالسيرفر"
+    );
+
+  }finally{
+
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = "تسجيل الدخول";
+    }
+
+  }
+}
+
+
+function startAddMoreCountdown(){
+
+  if(addMoreTimer){
+    clearInterval(addMoreTimer);
+  }
+
+  const box = $("addMoreOrderBox");
+  const countdown = $("addMoreCountdown");
+
+  if(
+    !box ||
+    !countdown ||
+    !window.lastOnlineOrder
+  ){
+    return;
+  }
+
+  function update(){
+
+    const remaining =
+      Number(
+        window.lastOnlineOrder.addItemsUntil || 0
+      ) - Date.now();
+
+    if(remaining <= 0){
+
+      clearInterval(addMoreTimer);
+
+      countdown.textContent = "انتهت المهلة";
+
+      const button =
+        box.querySelector("button");
+
+      if(button){
+        button.remove();
+      }
+
+      window.lastOnlineOrder = null;
+
+      localStorage.removeItem(
+        "hesbah_last_online_order"
+      );
+
+      return;
+    }
+
+    const totalSeconds =
+      Math.ceil(remaining / 1000);
+
+    const minutes =
+      Math.floor(totalSeconds / 60);
+
+    const seconds =
+      totalSeconds % 60;
+
+    countdown.textContent =
+      String(minutes).padStart(2,"0") +
+      ":" +
+      String(seconds).padStart(2,"0");
+  }
+
+  update();
+
+  addMoreTimer =
+    setInterval(update, 1000);
+}
+
+/* =========================
+   تسجيل عميل جديد
+========================= */
+
+async function registerCustomer(){
+
+  const name =
+    $("registerName")
+      .value
+      .trim();
+
+  const phone =
+    $("registerPhone")
+      .value
+      .trim();
+
+  const password =
+    $("registerPassword")
+      .value;
+
+
+  clearMessage(
+    "registerMessage"
+  );
+
+
+  if(
+    !name ||
+    !phone ||
+    !password
+  ){
+
+    showMessage(
+      "registerMessage",
+      "الاسم ورقم الهاتف وكلمة المرور مطلوبة"
+    );
+
+    return;
+  }
+
+
+  if(password.length < 6){
+
+    showMessage(
+      "registerMessage",
+      "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+    );
+
+    return;
+  }
+
+
+  const btn =
+    $("registerBtn");
+
+  btn.disabled = true;
+
+  btn.textContent =
+    "جاري إنشاء الحساب...";
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/public/register",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              storeId:STORE_ID,
+
+              name,
+
+              phone,
+
+              password
+
+            })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !data.ok
+    ){
+
+      showMessage(
+        "registerMessage",
+        data.message ||
+        "تعذر إنشاء الحساب"
+      );
+
+      return;
+    }
+
+
+    showMessage(
+      "registerMessage",
+      "تم إنشاء الحساب بنجاح، يمكنك تسجيل الدخول الآن",
+      "success"
+    );
+
+
+    $("registerPassword")
+      .value = "";
+
+
+    setTimeout(
+      showLogin,
+      800
+    );
+
+
+    $("loginPhone")
+      .value = phone;
+
+
+  }catch(error){
+
+    console.error(
+      "Register error:",
+      error
+    );
+
+    showMessage(
+      "registerMessage",
+      "تعذر الاتصال بالسيرفر"
+    );
+
+
+  }finally{
+
+    btn.disabled = false;
+
+    btn.textContent =
+      "إنشاء الحساب";
+
+  }
+
+}
+
+
+/* =========================
+   فتح المتجر
+========================= */
+
+function openStore(){
+
+  $("authPage")
+    .classList
+    .add("hidden");
+
+  $("storePage")
+    .classList
+    .remove("hidden");
+
+
+  $("customerName")
+    .textContent =
+      customer?.name ||
+      "العميل";
+
+
+  loadProducts();
+}
+
+
+/* =========================
+   تحميل المنتجات
+========================= */
+
+async function loadProducts(){
+
+  const container =
+    $("products");
+
+
+  container.innerHTML =
+    '<div class="loading">جاري تحميل المنتجات...</div>';
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/public/products?storeId=" +
+        encodeURIComponent(STORE_ID)
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !data.ok
+    ){
+
+      throw new Error(
+        data.message ||
+        "تعذر تحميل المنتجات"
+      );
+
+    }
+
+
+    products =
+      Array.isArray(
+        data.products
+      )
+      ? data.products
+      : [];
+
+
+    renderProducts();
+
+
+  }catch(error){
+
+    console.error(
+      "Products error:",
+      error
+    );
+
+    container.innerHTML =
+      '<div class="loading">تعذر تحميل المنتجات</div>';
+
+  }
+
+}
+
+
+/* =========================
+   عرض المنتجات
+========================= */
+
+function renderProducts(){
+
+  const container =
+    $("products");
+
+
+  if(!products.length){
+
+    container.innerHTML =
+      '<div class="loading">لا توجد منتجات حالياً</div>';
+
+    return;
+  }
+
+
+  container.innerHTML =
+    products.map(
+      product => {
+
+        const available =
+          product.available === true;
+
+
+        const image =
+          product.image
+
+          ? `
+            <img
+              src="${escapeHtml(product.image)}"
+              alt="${escapeHtml(product.name)}"
+            >
+          `
+
+          : `
+            <div class="product-placeholder">
+              📦
+            </div>
+          `;
+
+
+        return `
+
+          <div class="product">
+
+            ${
+              !available
+              ?
+              '<div class="unavailable">غير متاح</div>'
+              :
+              ''
+            }
+
+
+            <div class="product-img">
+              ${image}
+            </div>
+
+
+            <div class="product-body">
+
+              <div class="product-name">
+                ${escapeHtml(product.name)}
+              </div>
+
+
+              <div class="product-price">
+                ${Number(product.price || 0).toFixed(2)}
+                جنيه
+              </div>
+
+
+              <div class="product-unit">
+                ${escapeHtml(product.unit || "قطعة")}
+              </div>
+
+
+              <button
+                class="add-btn"
+                ${!available ? "disabled" : ""}
+                onclick="addToCart(${Number(product.id)})"
+              >
+                ${
+                  available
+                  ? "إضافة للسلة"
+                  : "غير متاح"
+                }
+              </button>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+    ).join("");
+
+}
+
+
+/* =========================
+   إضافة للسلة
+========================= */
+
+function addToCart(productId){
+
+  const product =
+    products.find(
+      x =>
+        Number(x.id) ===
+        Number(productId)
+    );
+
+
+  if(
+    !product ||
+    !product.available
+  ){
+    return;
+  }
+
+
+  const existing =
+    cart.find(
+      x =>
+        Number(x.productId) ===
+        Number(productId)
+    );
+
+
+  if(existing){
+
+    existing.qty++;
+
+  }else{
+
+    cart.push({
+
+      productId:
+        Number(product.id),
+
+      code:
+        String(product.code || ""),
+
+      name:
+        product.name,
+
+      price:
+        Number(product.price || 0),
+
+      qty:1
+
+    });
+
+  }
+
+
+  updateCartCount();
+
+  alert(
+    "تمت إضافة المنتج إلى السلة"
+  );
+
+}
+
+
+/* =========================
+   الكميات
+========================= */
+
+function increaseQty(productId){
+
+  const item =
+    cart.find(
+      x =>
+        Number(x.productId) ===
+        Number(productId)
+    );
+
+
+  if(item){
+    item.qty++;
+  }
+
+
+  renderCart();
+}
+
+
+function decreaseQty(productId){
+
+  const item =
+    cart.find(
+      x =>
+        Number(x.productId) ===
+        Number(productId)
+    );
+
+
+  if(!item){
+    return;
+  }
+
+
+  item.qty--;
+
+
+  if(item.qty <= 0){
+
+    cart =
+      cart.filter(
+        x =>
+          Number(x.productId) !==
+          Number(productId)
+      );
+
+  }
+
+
+  renderCart();
+}
+
+
+/* =========================
+   عداد السلة
+========================= */
+
+function updateCartCount(){
+
+  const count =
+    cart.reduce(
+      (sum,item) =>
+        sum +
+        Number(item.qty || 0),
+      0
+    );
+
+
+  $("cartCount")
+    .textContent =
+      count;
+
+}
+
+
+/* =========================
+   فتح السلة
+========================= */
+
+function openCart(){
+
+  renderCart();
+
+  $("cartModal")
+    .classList
+    .remove("hidden");
+
+}
+
+
+function closeCart(){
+
+  $("cartModal")
+    .classList
+    .add("hidden");
+
+}
+
+
+function closeCartOutside(event){
+
+  if(
+    event.target ===
+    $("cartModal")
+  ){
+
+    closeCart();
+
+  }
+
+}
+
+
+/* =========================
+   عرض السلة
+========================= */
+
+function renderCart(){
+
+  const container =
+    $("cartItems");
+
+
+  updateCartCount();
+
+
+  if(!cart.length){
+
+    container.innerHTML =
+      '<div class="empty">السلة فارغة</div>';
+
+
+    $("cartTotal").innerHTML =
+      "<span>الإجمالي</span><span>0 جنيه</span>";
+
+
+    $("checkoutBtn")
+      .disabled = true;
+
+
+    return;
+  }
+
+
+  $("checkoutBtn")
+    .disabled = false;
+
+
+  let total = 0;
+
+
+  container.innerHTML =
+    cart.map(
+      item => {
+
+        const itemTotal =
+          Number(item.price) *
+          Number(item.qty);
+
+
+        total += itemTotal;
+
+
+        return `
+
+          <div class="cart-item">
+
+            <div class="cart-info">
+
+              <div class="cart-name">
+                ${escapeHtml(item.name)}
+              </div>
+
+              <div class="cart-price">
+
+                ${Number(item.price).toFixed(2)}
+                ×
+                ${item.qty}
+                =
+                ${itemTotal.toFixed(2)}
+                جنيه
+
+              </div>
+
+            </div>
+
+
+            <div class="qty">
+
+              <button
+                onclick="increaseQty(${Number(item.productId)})"
+              >
+                +
+              </button>
+
+
+              <strong>
+                ${item.qty}
+              </strong>
+
+
+              <button
+                onclick="decreaseQty(${Number(item.productId)})"
+              >
+                −
+              </button>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+    ).join("");
+
+
+  $("cartTotal").innerHTML = `
+
+    <span>
+      الإجمالي
+    </span>
+
+    <span>
+      ${total.toFixed(2)}
+      جنيه
+    </span>
+
+  `;
+
+}
+
+
+/* =========================
+   Checkout
+========================= */
+
+function checkout(){
+
+  if(!cart.length){
+
+    alert(
+      "السلة فارغة"
+    );
+
+    return;
+  }
+
+
+  const total =
+    cart.reduce(
+      (sum,item) =>
+        sum +
+        (
+          Number(item.price) *
+          Number(item.qty)
+        ),
+      0
+    );
+
+
+  const address =
+    customer?.address || "";
+
+  const building =
+    customer?.building || "";
+
+  const floor =
+    customer?.floor || "";
+
+  const apartment =
+    customer?.apartment || "";
+
+
+  const html = `
+
+    <div class="field">
+
+      <label>
+        العنوان
+      </label>
+
+      <input
+        id="orderAddress"
+        type="text"
+        value="${escapeHtml(address)}"
+        placeholder="العنوان بالتفصيل"
+      >
+
+    </div>
+
+
+
+    <div class="field">
+      <label>موقع التوصيل على الخريطة (اختياري)</label>
+      <button
+        type="button"
+        class="main-btn"
+        style="background:#059669"
+        onclick="captureCustomerLocation()"
+      >
+        📍 تحديد موقعي الحالي
+      </button>
+      <div id="customerLocationMessage" style="margin-top:6px;color:#666;font-size:13px">
+        يساعد الدليفري على الوصول لمكانك بدقة.
+      </div>
+    </div>
+
+    <div class="field">
+
+      <label>
+        المبنى
+      </label>
+
+      <input
+        id="orderBuilding"
+        type="text"
+        value="${escapeHtml(building)}"
+        placeholder="رقم المبنى"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        الدور
+      </label>
+
+      <input
+        id="orderFloor"
+        type="text"
+        value="${escapeHtml(floor)}"
+        placeholder="رقم الدور"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        الشقة
+      </label>
+
+      <input
+        id="orderApartment"
+        type="text"
+        value="${escapeHtml(apartment)}"
+        placeholder="رقم الشقة"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        ملاحظات الطلب
+      </label>
+
+      <input
+        id="orderNotes"
+        type="text"
+        value=""
+        placeholder="أي ملاحظات إضافية"
+      >
+
+    </div>
+
+
+    <div class="total">
+
+      <span>
+        إجمالي الطلب
+      </span>
+
+      <span>
+        ${total.toFixed(2)}
+        جنيه
+      </span>
+
+    </div>
+
+
+    <button
+      class="main-btn"
+      onclick="continueToPayment()"
+    >
+      متابعة واختيار طريقة الدفع
+    </button>
+
+  `;
+
+
+  $("cartItems")
+    .innerHTML = html;
+
+
+  $("cartTotal")
+    .innerHTML = "";
+
+
+  $("checkoutBtn")
+    .classList
+    .add("hidden");
+
+}
+
+
+/* =========================
+   طرق الدفع
+========================= */
+
+async function continueToPayment(){
+
+  const address =
+    $("orderAddress")
+      .value
+      .trim();
+
+  const building =
+    $("orderBuilding")
+      .value
+      .trim();
+
+  const floor =
+    $("orderFloor")
+      .value
+      .trim();
+
+  const apartment =
+    $("orderApartment")
+      .value
+      .trim();
+
+  const notes =
+    $("orderNotes")
+      .value
+      .trim();
+
+
+  if(!address){
+
+    alert(
+      "من فضلك اكتب العنوان"
+    );
+
+    return;
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/public/payment-methods?storeId=" +
+        encodeURIComponent(STORE_ID)
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !result.ok
+    ){
+
+      alert(
+        result.message ||
+        "تعذر تحميل طرق الدفع"
+      );
+
+      return;
+    }
+
+
+    const payment =
+      result.payment || {};
+
+
+    const methods = [];
+
+
+    if(payment.cash?.enabled){
+
+      methods.push({
+
+        id:"cash",
+
+        name:
+          payment.cash.name ||
+          "دفع كاش عند الاستلام"
+
+      });
+
+    }
+
+
+    if(payment.vodafoneCash?.enabled){
+
+      methods.push({
+
+        id:"vodafoneCash",
+
+        name:
+          payment.vodafoneCash.name ||
+          "Vodafone Cash",
+
+        details:
+          payment.vodafoneCash.number ||
+          ""
+
+      });
+
+    }
+
+
+    if(payment.etisalatCash?.enabled){
+
+      methods.push({
+
+        id:"etisalatCash",
+
+        name:
+          payment.etisalatCash.name ||
+          "Etisalat Cash",
+
+        details:
+          payment.etisalatCash.number ||
+          ""
+
+      });
+
+    }
+
+
+    if(payment.orangeCash?.enabled){
+
+      methods.push({
+
+        id:"orangeCash",
+
+        name:
+          payment.orangeCash.name ||
+          "Orange Cash",
+
+        details:
+          payment.orangeCash.number ||
+          ""
+
+      });
+
+    }
+
+
+    if(payment.wePay?.enabled){
+
+      methods.push({
+
+        id:"wePay",
+
+        name:
+          payment.wePay.name ||
+          "WE Pay",
+
+        details:
+          payment.wePay.number ||
+          ""
+
+      });
+
+    }
+
+
+    if(payment.instapay?.enabled){
+
+      methods.push({
+
+        id:"instapay",
+
+        name:
+          payment.instapay.name ||
+          "InstaPay",
+
+        details:
+          payment.instapay.account ||
+          ""
+
+      });
+
+    }
+
+
+    if(payment.card?.enabled){
+
+      methods.push({
+
+        id:"card",
+
+        name:
+          payment.card.name ||
+          "Visa / Mastercard"
+
+      });
+
+    }
+
+
+    if(!methods.length){
+
+      alert(
+        "لا توجد طرق دفع متاحة حالياً"
+      );
+
+      return;
+    }
+
+
+    window.pendingOrderData = {
+
+      address,
+
+      building,
+
+      floor,
+
+      apartment,
+
+      notes,
+
+      customerLocation:
+        pendingCustomerLocation || null
+
+    };
+
+
+    $("cartItems").innerHTML = `
+
+      <div class="field">
+
+        <label>
+          طريقة الدفع
+        </label>
+
+
+        <div id="paymentMethods">
+
+          ${methods.map(
+            (method,index) => `
+
+              <label style="
+                display:block;
+                padding:14px;
+                margin:10px 0;
+                border:1px solid #ddd;
+                border-radius:12px;
+                cursor:pointer;
+              ">
+
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="${escapeHtml(method.id)}"
+                  ${index === 0 ? "checked" : ""}
+                >
+
+                <strong>
+                  ${escapeHtml(method.name)}
+                </strong>
+
+                ${
+                  method.details
+                  ?
+                  `
+                    <div style="
+                      margin-top:6px;
+                      color:#666;
+                      font-size:14px;
+                    ">
+                      ${escapeHtml(method.details)}
+                    </div>
+                  `
+                  :
+                  ""
+                }
+
+              </label>
+
+            `
+          ).join("")}
+
+        </div>
+
+      </div>
+
+
+      <button
+        class="main-btn"
+        onclick="submitCustomerOrder()"
+      >
+        تأكيد وإرسال الطلب
+      </button>
+
+    `;
+
+
+    $("cartTotal")
+      .innerHTML = "";
+
+
+    $("checkoutBtn")
+      .classList
+      .add("hidden");
+
+
+  }catch(error){
+
+    console.error(
+      "Payment methods error:",
+      error
+    );
+
+    alert(
+      "حدث خطأ أثناء تحميل طرق الدفع"
+    );
+
+  }
+
+}
+
+
+/* =========================
+   إرسال الطلب
+========================= */
+
+async function submitCustomerOrder(){
+
+  if(
+    !customer ||
+    !customerToken
+  ){
+
+    alert(
+      "من فضلك سجل الدخول أولاً"
+    );
+
+    return;
+  }
+
+
+  if(!cart.length){
+
+    alert(
+      "السلة فارغة"
+    );
+
+    return;
+  }
+
+
+  const selected =
+    document.querySelector(
+      'input[name="paymentMethod"]:checked'
+    );
+
+
+  if(!selected){
+
+    alert(
+      "من فضلك اختر طريقة الدفع"
+    );
+
+    return;
+  }
+
+
+  const paymentMethod =
+    selected.value;
+
+
+  const data =
+    window.pendingOrderData ||
+    {};
+
+
+  const items =
+    cart.map(
+      item => ({
+
+        productId:
+          Number(item.productId || 0),
+
+        code:
+          String(item.code || ""),
+
+        name:
+          String(item.name || ""),
+
+        price:
+          Number(item.price || 0),
+
+        qty:
+          Number(item.qty || 0)
+
+      })
+    ).filter(
+      item =>
+        item.productId > 0 &&
+        item.qty > 0
+    );
+
+
+  if(!items.length){
+
+    alert(
+      "لا توجد منتجات صالحة في السلة"
+    );
+
+    return;
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/public/orders",
+        {
+
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              "Bearer " +
+              customerToken
+          },
+
+          body:
+            JSON.stringify({
+
+              storeId:
+                STORE_ID,
+
+              type:
+                "delivery",
+
+              customer:{
+
+                name:
+                  customer.name || "",
+
+                phone:
+                  customer.phone || "",
+
+                address:
+                  data.address || "",
+
+                building:
+                  data.building || "",
+
+                floor:
+                  data.floor || "",
+
+                apartment:
+                  data.apartment || "",
+
+                customerLocation:
+                  data.customerLocation || null,
+
+                notes:
+                  data.notes || ""
+
+              },
+
+              items,
+
+              paymentMethod
+
+            })
+
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !result.ok
+    ){
+
+      alert(
+        result.message ||
+        "تعذر إرسال الطلب"
+      );
+
+      return;
+    }
+
+
+    cart = [];
+
+    window.pendingOrderData =
+      null;
+
+
+   window.lastOnlineOrder = {
+
+  id:
+    result.order.id,
+
+  number:
+    result.order.number,
+
+  status:
+    result.order.status || "new",
+
+  total:
+    result.order.total,
+
+  addItemsUntil:
+    result.order.addItemsUntil ||
+    (
+      Date.now() +
+      3 * 60 * 1000
+    )
+
+};
+localStorage.setItem(
+  "hesbah_last_online_order",
+  JSON.stringify(window.lastOnlineOrder)
+);
+
+    localStorage.setItem(
+      "hesbah_cart",
+      JSON.stringify([])
+    );
+
+
+    updateCartCount();
+
+
+    $("cartItems").innerHTML = `
+
+      <div style="
+        text-align:center;
+        padding:25px;
+      ">
+
+        <div style="
+          font-size:55px;
+          margin-bottom:10px;
+        ">
+          ✅
+        </div>
+
+
+        <h2>
+          تم إرسال طلبك بنجاح
+        </h2>
+
+
+        <p>
+          رقم الطلب:
+          <strong>
+            ${escapeHtml(result.order.number)}
+          </strong>
+        </p>
+
+
+        <p>
+          إجمالي الطلب:
+          <strong>
+            ${Number(
+              result.order.total || 0
+            ).toFixed(2)}
+          </strong>
+          جنيه
+        </p>
+
+
+        <div
+          id="addMoreOrderBox"
+          style="
+            margin-top:20px;
+            padding:18px;
+            background:#f5f7fa;
+            border-radius:14px;
+          "
+        >
+
+          <div style="
+            font-size:18px;
+            font-weight:bold;
+            margin-bottom:10px;
+          ">
+            ⏱️ يمكنك إضافة منتجات للطلب
+          </div>
+
+
+          <div
+            id="addMoreCountdown"
+            style="
+              font-size:30px;
+              font-weight:bold;
+              margin-bottom:15px;
+            "
+          >
+            03:00
+          </div>
+
+
+          <button
+            class="main-btn"
+            onclick="addMoreProductsToOrder()"
+          >
+            ➕ إضافة منتجات للطلب
+          </button>
+
+        </div>
+
+
+        <button
+          class="main-btn"
+          style="margin-top:12px;"
+          onclick="closeCart()"
+        >
+          العودة للمنتجات
+        </button>
+
+      </div>
+
+    `;
+
+
+    $("cartTotal")
+      .innerHTML = "";
+
+
+    $("checkoutBtn")
+      .classList
+      .add("hidden");
+
+
+    /* تشغيل عداد الثلاث دقائق */
+
+    startAddMoreCountdown();
+
+
+  }catch(error){
+
+    console.error(
+      "Submit order error:",
+      error
+    );
+
+    alert(
+      "حدث خطأ أثناء إرسال الطلب للسيرفر"
+    );
+
+  }
+
+}
+
+
+/* =========================
+   عداد إضافة المنتجات
+========================= */
+
+/* =========================
+   إضافة منتجات لنفس الطلب
+========================= */
+
+function addMoreProductsToOrder(){
+
+  if(!window.lastOnlineOrder){
+
+    alert(
+      "لا يوجد طلب مفتوح للإضافة"
+    );
+
+    return;
+  }
+
+
+  const remaining =
+    Number(
+      window.lastOnlineOrder
+        .addItemsUntil || 0
+    ) -
+    Date.now();
+
+
+  if(remaining <= 0){
+
+    alert(
+      "انتهت مهلة إضافة المنتجات لهذا الطلب"
+    );
+
+    return;
+  }
+
+
+  $("cartModal")
+    .classList
+    .add("hidden");
+
+
+  cart = [];
+
+
+  updateCartCount();
+
+
+  $("storePage")
+    .classList
+    .remove("hidden");
+
+
+  const productsTitle =
+    document.querySelector(
+      ".products-title"
+    );
+
+
+  if(productsTitle){
+
+    let oldButton =
+      document.getElementById(
+        "addMoreSubmitBtn"
+      );
+
+
+    if(!oldButton){
+
+      oldButton =
+        document.createElement(
+          "button"
+        );
+
+
+      oldButton.id =
+        "addMoreSubmitBtn";
+
+
+      oldButton.className =
+        "cart-btn";
+
+
+      oldButton.textContent =
+        "📦 إرسال الإضافات للطلب";
+
+
+      oldButton.onclick =
+        submitAdditionalItems;
+
+
+      productsTitle.appendChild(
+        oldButton
+      );
+
+    }
+
+  }
+
+
+  alert(
+    "يمكنك الآن اختيار المنتجات الإضافية للطلب رقم " +
+    window.lastOnlineOrder.number
+  );
+
+}
+
+
+/* =========================
+   إرسال الإضافات
+========================= */
+
+async function submitAdditionalItems(){
+
+  if(!window.lastOnlineOrder){
+
+    alert(
+      "لا يوجد طلب مفتوح"
+    );
+
+    return;
+  }
+
+
+  const remaining =
+    Number(
+      window.lastOnlineOrder
+        .addItemsUntil || 0
+    ) -
+    Date.now();
+
+
+  if(remaining <= 0){
+
+    alert(
+      "انتهت مهلة إضافة المنتجات لهذا الطلب"
+    );
+
+    return;
+  }
+
+
+  if(!cart.length){
+
+    alert(
+      "أضف منتجاً واحداً على الأقل"
+    );
+
+    return;
+  }
+
+
+  const items =
+    cart.map(
+      item => ({
+
+        productId:
+          Number(
+            item.productId ||
+            item.id ||
+            0
+          ),
+
+        qty:
+          Number(
+            item.qty || 0
+          )
+
+      })
+    ).filter(
+      item =>
+        item.productId > 0 &&
+        item.qty > 0
+    );
+
+
+  if(!items.length){
+
+    alert(
+      "لم يتم العثور على منتجات صالحة للإضافة"
+    );
+
+    return;
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/public/orders/add-items",
+        {
+
+          method:"POST",
+
+          headers:{
+
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              "Bearer " +
+              customerToken
+
+          },
+
+          body:
+            JSON.stringify({
+
+              storeId:
+                STORE_ID,
+
+              orderId:
+                Number(
+                  window.lastOnlineOrder.id
+                ),
+
+              items
+
+            })
+
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !result.ok
+    ){
+
+      alert(
+        result.message ||
+        "تعذر إضافة المنتجات للطلب"
+      );
+
+      return;
+    }
+
+
+    window.lastOnlineOrder.total =
+      Number(
+        result.order.total || 0
+      );
+
+
+    window.lastOnlineOrder.addItemsUntil =
+      Number(
+        result.order.addItemsUntil ||
+        window.lastOnlineOrder.addItemsUntil
+      );
+
+
+    cart = [];
+
+
+    localStorage.setItem(
+      "hesbah_cart",
+      JSON.stringify([])
+    );
+
+
+    updateCartCount();
+
+
+    const btn =
+      document.getElementById(
+        "addMoreSubmitBtn"
+      );
+
+
+    if(btn){
+
+      btn.remove();
+
+    }
+
+
+    alert(
+      "تمت إضافة المنتجات إلى الطلب رقم " +
+      window.lastOnlineOrder.number +
+      " بنجاح ✅"
+    );
+
+
+    openCart();
+
+
+    /* إعادة عرض حالة الطلب */
+
+    renderOrderSuccess();
+
+
+  }catch(error){
+
+    console.error(
+      "Additional order error:",
+      error
+    );
+
+    alert(
+      "تعذر الاتصال بالسيرفر"
+    );
+
+  }
+
+}
+
+
+/* =========================
+   بدء طلب جديد لنفس العميل
+========================= */
+
+function startNewOrder(){
+
+  if(addMoreTimer){
+    clearInterval(addMoreTimer);
+    addMoreTimer = null;
+  }
+
+  cart = [];
+  window.pendingOrderData = null;
+
+  localStorage.setItem(
+    "hesbah_cart",
+    JSON.stringify([])
+  );
+
+  updateCartCount();
+
+  $("cartModal").classList.add("hidden");
+  $("storePage").classList.remove("hidden");
+
+  loadProducts();
+}
+
+
+/* =========================
+   عرض حالة الطلب بعد الإضافة
+========================= */
+
+
+function renderOrderSuccess(){
+
+  if(!window.lastOnlineOrder){
+    return;
+  }
+
+  $("cartItems").innerHTML = `
+
+    <div style="text-align:center;padding:25px">
+
+      <div style="font-size:55px;margin-bottom:10px">📦</div>
+
+      <h2>
+        متابعة الطلب رقم
+        ${escapeHtml(window.lastOnlineOrder.number)}
+      </h2>
+
+      <p>
+        إجمالي الطلب الحالي:
+        <strong>
+          ${Number(window.lastOnlineOrder.total || 0).toFixed(2)}
+          جنيه
+        </strong>
+      </p>
+
+      <div id="orderTrackingBox" class="order-tracking">
+        <h3>حالة الطلب</h3>
+        <div id="orderTrackingStatus">جاري تحميل الحالة...</div>
+        <div id="orderTrackingSteps" class="tracking-steps"></div>
+        <div id="orderTrackingInfo" class="tracking-info"></div>
+        <div id="orderTrackingMap" class="tracking-map"></div>
+      </div>
+
+      <div
+        id="addMoreOrderBox"
+        style="
+          margin-top:20px;
+          padding:18px;
+          background:#f5f7fa;
+          border-radius:14px;
+        "
+      >
+        <div style="font-size:18px;font-weight:bold;margin-bottom:10px">
+          ⏱️ يمكنك إضافة منتجات للطلب
+        </div>
+
+        <div id="addMoreCountdown"
+          style="font-size:30px;font-weight:bold;margin-bottom:15px">
+          03:00
+        </div>
+
+        <button class="main-btn" onclick="addMoreProductsToOrder()">
+          ➕ إضافة منتجات للطلب
+        </button>
+      </div>
+
+      <button
+        class="main-btn"
+        style="margin-top:12px;"
+        onclick="closeCart()"
+      >
+        العودة للمنتجات
+      </button>
+
+    </div>
+  `;
+
+  $("cartTotal").innerHTML = "";
+  $("checkoutBtn").classList.add("hidden");
+
+  startAddMoreCountdown();
+  startOrderTracking();
+}
+
+function captureCustomerLocation(){
+
+  const msg=$("customerLocationMessage");
+
+  if(!navigator.geolocation){
+    if(msg) msg.textContent="هذا الجهاز لا يدعم تحديد الموقع.";
+    return;
+  }
+
+  if(msg) msg.textContent="جاري تحديد موقعك...";
+
+  navigator.geolocation.getCurrentPosition(
+    position=>{
+      pendingCustomerLocation={
+        lat:Number(position.coords.latitude),
+        lng:Number(position.coords.longitude)
+      };
+
+      if(msg){
+        msg.textContent="✅ تم تحديد موقعك على الخريطة.";
+      }
+    },
+    error=>{
+      console.error("Customer location error:",error);
+      if(msg){
+        msg.textContent="تعذر تحديد الموقع. تأكد من السماح للموقع من المتصفح.";
+      }
+    },
+    {
+      enableHighAccuracy:true,
+      timeout:10000,
+      maximumAge:30000
+    }
+  );
+}
+
+function stopOrderTracking(){
+
+  if(trackingTimer){
+    clearInterval(trackingTimer);
+    trackingTimer=null;
+  }
+}
+
+function statusLabel(status){
+
+  return ({
+    new:"تم استلام الطلب",
+    accepted:"تم قبول الطلب",
+    preparing:"جاري تجهيز الطلب",
+    ready:"الطلب جاهز",
+    out_for_delivery:"🛵 خرج الطلب للتوصيل",
+    completed:"تم التسليم",
+    rejected:"تم رفض الطلب"
+  })[status] || status || "غير معروف";
+}
+
+function renderTrackingSteps(status){
+
+  const steps=[
+    ["new","تم استلام الطلب"],
+    ["accepted","تم قبول الطلب"],
+    ["preparing","جاري التجهيز"],
+    ["ready","الطلب جاهز"],
+    ["out_for_delivery","🛵 خرج للتوصيل"],
+    ["completed","تم التسليم"]
+  ];
+
+  const orderIndex=steps.findIndex(x=>x[0]===status);
+
+  return steps.map((step,index)=>{
+
+    let cls="";
+    if(status==="rejected"){
+      cls=step[0]==="new" ? "done" : "";
+    }else if(orderIndex>=0 && index<orderIndex){
+      cls="done";
+    }else if(index===orderIndex){
+      cls="active";
+    }
+
+    return `
+      <div class="tracking-step ${cls}">
+        <span>${index<orderIndex ? "✅" : index===orderIndex ? "🔵" : "⚪"}</span>
+        <span>${step[1]}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function updateTrackingMap(order){
+
+  const mapBox=$("orderTrackingMap");
+  if(!mapBox || typeof L==="undefined") return;
+
+  const driver=order.driverLocation;
+  const customerLoc=order.customerLocation;
+
+  if(!driver && !customerLoc){
+    mapBox.style.display="none";
+    return;
+  }
+
+  mapBox.style.display="block";
+
+  if(!trackingMap){
+    trackingMap=L.map(mapBox).setView(
+      [
+        Number((driver||customerLoc).lat),
+        Number((driver||customerLoc).lng)
+      ],15
+    );
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        maxZoom:19,
+        attribution:"© OpenStreetMap"
+      }
+    ).addTo(trackingMap);
+  }
+
+  if(driver){
+    const pos=[Number(driver.lat),Number(driver.lng)];
+
+    if(!driverMarker){
+      driverMarker=L.marker(pos).addTo(trackingMap);
+    }else{
+      driverMarker.setLatLng(pos);
+    }
+
+    driverMarker.bindPopup("🛵 موقع الدليفري الحالي");
+  }
+
+  if(customerLoc){
+    const pos=[Number(customerLoc.lat),Number(customerLoc.lng)];
+
+    if(!customerMarker){
+      customerMarker=L.marker(pos).addTo(trackingMap);
+    }else{
+      customerMarker.setLatLng(pos);
+    }
+
+    customerMarker.bindPopup("📍 موقع التوصيل");
+  }
+
+  if(driver && customerLoc){
+
+    const points=[
+      [Number(driver.lat),Number(driver.lng)],
+      [Number(customerLoc.lat),Number(customerLoc.lng)]
+    ];
+
+    if(!trackingLine){
+      trackingLine=L.polyline(points).addTo(trackingMap);
+    }else{
+      trackingLine.setLatLngs(points);
+    }
+
+    trackingMap.fitBounds(points,{padding:[25,25]});
+
+  }else{
+
+    trackingMap.setView(
+      [Number((driver||customerLoc).lat),Number((driver||customerLoc).lng)],
+      16
+    );
+  }
+
+  setTimeout(()=>{
+    if(trackingMap) trackingMap.invalidateSize();
+  },100);
+}
+
+async function refreshOrderTracking(){
+
+  if(!window.lastOnlineOrder || !customerToken){
+    return;
+  }
+
+  try{
+
+    const response=await fetch(
+      "/api/public/orders/status?storeId="+
+      encodeURIComponent(STORE_ID)+
+      "&orderId="+
+      encodeURIComponent(window.lastOnlineOrder.id),
+      {
+        headers:{
+          Authorization:"Bearer "+customerToken
+        },
+        cache:"no-store"
+      }
+    );
+
+    const result=await response.json();
+
+    if(!response.ok || !result.ok){
+      console.error("Order tracking error:",result);
+      return;
+    }
+
+    const order=result.order;
+
+    window.lastOnlineOrder.status=order.status;
+    window.lastOnlineOrder.total=Number(order.total||0);
+    window.lastOnlineOrder.statusUpdatedAt=order.statusUpdatedAt;
+    window.lastOnlineOrder.driverLocation=order.driverLocation;
+    window.lastOnlineOrder.customerLocation=order.customerLocation;
+
+    localStorage.setItem(
+      "hesbah_last_online_order",
+      JSON.stringify(window.lastOnlineOrder)
+    );
+
+    const statusEl=$("orderTrackingStatus");
+    const stepsEl=$("orderTrackingSteps");
+    const infoEl=$("orderTrackingInfo");
+
+    if(statusEl){
+      statusEl.innerHTML=
+        "<strong>"+escapeHtml(statusLabel(order.status))+"</strong>";
+    }
+
+    if(stepsEl){
+      stepsEl.innerHTML=renderTrackingSteps(order.status);
+    }
+
+    if(infoEl){
+
+      if(order.status==="out_for_delivery"){
+        infoEl.textContent=
+          order.driverLocation
+            ? "🛵 الدليفري يتحرك الآن — يتم تحديث موقعه تلقائياً."
+            : "🛵 خرج الدليفري للتوصيل — في انتظار إرسال موقعه.";
+      }else if(order.status==="completed"){
+        infoEl.textContent="✅ تم تسليم الطلب بنجاح.";
+      }else if(order.status==="rejected"){
+        infoEl.textContent="❌ تم رفض الطلب.";
+      }else{
+        infoEl.textContent=
+          "آخر تحديث: "+
+          new Date(order.statusUpdatedAt).toLocaleString("ar-EG");
+      }
+    }
+
+    updateTrackingMap(order);
+
+    if(order.status==="completed" || order.status==="rejected"){
+      stopOrderTracking();
+    }
+
+  }catch(error){
+    console.error("Order tracking request error:",error);
+  }
+}
+
+function startOrderTracking(){
+
+  stopOrderTracking();
+  refreshOrderTracking();
+
+  trackingTimer=setInterval(
+    refreshOrderTracking,
+    5000
+  );
+}
+
+
+/* =========================
+   تسجيل الخروج
+========================= */
+
+function logoutCustomer(){
+
+  stopOrderTracking();
+
+  if(addMoreTimer){
+
+    clearInterval(
+      addMoreTimer
+    );
+
+    addMoreTimer = null;
+
+  }
+
+
+  customer = null;
+
+  customerToken = null;
+
+  cart = [];
+
+
+  window.lastOnlineOrder =
+    null;
+    localStorage.removeItem(
+  "hesbah_last_online_order"
+);
+
+
+  localStorage.removeItem(
+    "hesbah_customer_token"
+  );
+
+
+  localStorage.removeItem(
+    "hesbah_customer"
+  );
+
+
+  localStorage.removeItem(
+    "hesbah_cart"
+  );
+
+
+  $("storePage")
+    .classList
+    .add("hidden");
+
+
+  $("authPage")
+    .classList
+    .remove("hidden");
+
+
+  $("loginPhone")
+    .value = "";
+
+
+  $("loginPassword")
+    .value = "";
+
+
+  showLogin();
+
+}
+
+
+/* =========================
+   استعادة الجلسة
+========================= */
+
+function restoreSession(){
+
+  try{
+
+    const token =
+      localStorage.getItem(
+        "hesbah_customer_token"
+      );
+
+
+    const saved =
+      localStorage.getItem(
+        "hesbah_customer"
+      );
+
+
+    if(
+      token &&
+      saved
+    ){
+
+      customerToken =
+        token;
+
+
+   customer =
+  JSON.parse(saved);
+
+
+const savedOrder =
+  localStorage.getItem(
+    "hesbah_last_online_order"
+  );
+
+
+if(savedOrder){
+
+  try{
+
+    window.lastOnlineOrder =
+      JSON.parse(savedOrder);
+
+    if(
+      !window.lastOnlineOrder ||
+      !window.lastOnlineOrder.id
+    ){
+
+      localStorage.removeItem(
+        "hesbah_last_online_order"
+      );
+
+      window.lastOnlineOrder = null;
+
+    }
+
+  }catch(error){
+
+    console.error(
+      "Saved order restore error:",
+      error
+    );
+
+    localStorage.removeItem(
+      "hesbah_last_online_order"
+    );
+
+    window.lastOnlineOrder = null;
+
+  }
+
+}
+
+
+openStore();
+
+
+      return;
+    }
+
+
+  }catch(error){
+
+    console.error(
+      "Session restore error:",
+      error
+    );
+
+
+    localStorage.removeItem(
+      "hesbah_customer_token"
+    );
+
+
+    localStorage.removeItem(
+      "hesbah_customer"
+    );
+
+  }
+
+
+  $("authPage")
+    .classList
+    .remove("hidden");
+
+
+  $("storePage")
+    .classList
+    .add("hidden");
+
+}
+
+
+/* =========================
+   تشغيل الصفحة
+========================= */
+
+window.addEventListener(
+  "load",
+  restoreSession
+);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto'),url=require('url');
+const PORT=Number(process.env.PORT||8080), HOST=process.env.HOST||'0.0.0.0';
+const DATA=path.join(__dirname,'data'); fs.mkdirSync(DATA,{recursive:true});
+const SECRET=process.env.HESBAH_SECRET||'CHANGE_THIS_SECRET_BEFORE_PRODUCTION';
+const DEMO={shop:{name:'متجري',phone:'',address:'',device:'Online',logo:''},owner:{name:'إدارة Hesbah',phone:''},printer:{copies:1,drawer:false,printer:'النظام الافتراضي',prep:false},activation:{status:'مفعل',code:'ONLINE',customer:'Online'},users:[{id:1,name:'المدير',username:'admin',passwordHash:hash('admin'),role:'مدير'}],products:[{id:1,code:'1001',name:'مياه معدنية',price:10,cost:6,stock:50,unit:'قطعة',image:''},{id:2,code:'1002',name:'عصير',price:15,cost:9,stock:35,unit:'قطعة',image:''}],customers:[],suppliers:[],expenses:[],invoices:[],returns:[],shifts:[],currentShift:null,theme:'light'};
+function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
+function storeFile(id){return path.join(DATA,encodeURIComponent(id)+'.json')}
+function load(id){const f=storeFile(id);if(!fs.existsSync(f)){save(id,{...structuredClone(DEMO),storeId:id,revision:1});}try{return JSON.parse(fs.readFileSync(f,'utf8'))}catch{return structuredClone(DEMO)}}
+function save(id,d){fs.writeFileSync(storeFile(id),JSON.stringify(d,null,2),'utf8')}
+function sign(payload){const body=Buffer.from(JSON.stringify(payload)).toString('base64url');const sig=crypto.createHmac('sha256',SECRET).update(body).digest('base64url');return body+'.'+sig}
+function verifyToken(token){try{const [body,sig]=String(token||'').split('.');const good=crypto.createHmac('sha256',SECRET).update(body).digest('base64url');if(!sig||!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(good)))throw Error();const p=JSON.parse(Buffer.from(body,'base64url'));if(p.exp<Date.now())throw Error();return p}catch{return null}}
+function json(res,status,data){const out=JSON.stringify(data);res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Allow-Methods':'GET,POST,PUT,OPTIONS','Cache-Control':'no-store'});res.end(out)}
+function body(req){return new Promise((resolve,reject)=>{let s='';req.on('data',c=>{s+=c;if(s.length>10e6)req.destroy()});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch(e){reject(e)}});req.on('error',reject)})}
+function auth(req){const p=verifyToken((req.headers.authorization||'').replace(/^Bearer\s+/i,''));return p}
+function safeUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role}}
+function serveStatic(req,res){let p=url.parse(req.url).pathname;if(p==='/'||p==='')p='/index.html';const root=path.join(__dirname,'public');const f=path.normalize(path.join(root,p));if(!f.startsWith(root))return res.end('Forbidden');fs.readFile(f,(e,b)=>{if(e){if(p!=='/index.html')return serveFile404(res);return serveFile404(res)}const ext=path.extname(f);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Cache-Control':'no-cache'});res.end(b)})}
+function serveFile404(res){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end('Not found')}
+async function handle(req,res){if(req.method==='OPTIONS')return json(res,204,{});const u=url.parse(req.url,true),p=u.pathname;
+if(p==='/api/health')return json(res,200,{ok:true,service:'Hesbah Online',time:new Date().toISOString()});
+if(!p.startsWith('/api/')) return serveStatic(req,res);
+if(p==='/api/login'&&req.method==='POST'){const b=await body(req);const sid=String(b.storeId||'demo').trim()||'demo',db=load(sid),user=db.users.find(x=>String(x.username).toLowerCase()===String(b.username||'').trim().toLowerCase());if(!user||user.passwordHash!==hash(b.password||''))return json(res,401,{ok:false,message:'بيانات الدخول غير صحيحة'});const token=sign({storeId:sid,userId:user.id,role:user.role,exp:Date.now()+7*86400000});return json(res,200,{ok:true,token,user:safeUser(user),store:{name:db.shop.name},revision:db.revision||1})}
+if(!p.startsWith('/api/'))return serveStatic(req,res);
+const a=auth(req);if(!a)return json(res,401,{ok:false,message:'انتهت الجلسة أو التوكن غير صالح'});const db=load(a.storeId);
+ if(p==='/api/bootstrap'&&req.method==='GET')return json(res,200,{ok:true,storeId:a.storeId,revision:db.revision||1,db:{...db,users:db.users.map(safeUser)}});
+ if(p==='/api/sync'&&req.method==='POST'){const b=await body(req);const rev=Number(b.revision||0);if(rev && rev!==(db.revision||1))return json(res,409,{ok:false,conflict:true,revision:db.revision||1,db});const incoming=b.db;if(!incoming||typeof incoming!=='object')return json(res,400,{ok:false,message:'بيانات المزامنة غير صالحة'});incoming.users=db.users;incoming.storeId=a.storeId;incoming.revision=(db.revision||1)+1;save(a.storeId,incoming);return json(res,200,{ok:true,revision:incoming.revision})}
+ if(p==='/api/products'&&req.method==='GET')return json(res,200,{ok:true,revision:db.revision||1,products:db.products||[]});
+ if(p==='/api/products'&&req.method==='PUT'){if(a.role!=='مدير')return json(res,403,{ok:false,message:'العملية للمدير فقط'});const b=await body(req), id=Number(b.id||Date.now()), item={id,code:String(b.code||''),name:String(b.name||''),price:Number(b.price||0),cost:Number(b.cost||0),stock:Number(b.stock||0),unit:String(b.unit||'قطعة'),image:String(b.image||'')};if(!item.name||!item.code)return json(res,400,{ok:false,message:'اسم الصنف والكود مطلوبان'});const i=db.products.findIndex(x=>x.id===id);if(i>=0)db.products[i]=item;else db.products.unshift(item);db.revision=(db.revision||1)+1;save(a.storeId,db);return json(res,200,{ok:true,product:item,revision:db.revision})}
+ if(p==='/api/invoices'&&req.method==='GET')return json(res,200,{ok:true,invoices:db.invoices||[],revision:db.revision||1});
+ return serveStatic(req,res)
+}
+http.createServer((req,res)=>handle(req,res).catch(e=>json(res,500,{ok:false,message:e.message||'Server error'}))).listen(PORT,HOST,()=>console.log(`Hesbah Online running on http://${HOST}:${PORT}`));

@@ -1,0 +1,265 @@
+:::writing{variant="standard" id="62418" title="Hesbah Online — index.html مصحح"}
+<!doctype html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta name="theme-color" content="#1769e0">
+
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+
+  <title>Hesbah Online</title>
+</head>
+
+<body>
+
+  <!-- Login -->
+
+  <div id="login" class="screen">
+
+    <div class="card login">
+
+      <div class="brand">
+        Hesbah <span>حسبة</span>
+      </div>
+
+      <h1>حسبة أونلاين</h1>
+
+      <p>
+        إدارة المبيعات والمخزون من أي جهاز
+      </p>
+
+      <input
+        id="store"
+        placeholder="كود المتجر"
+        value="demo"
+      >
+
+      <input
+        id="user"
+        placeholder="اسم المستخدم"
+        value="admin"
+      >
+
+      <input
+        id="pass"
+        type="password"
+        placeholder="كلمة المرور"
+        value="admin"
+      >
+
+      <button onclick="doLogin()">
+        تسجيل الدخول
+      </button>
+
+      <div id="msg"></div>
+
+    </div>
+
+  </div>
+
+
+  <!-- Dashboard -->
+
+  <main id="app" class="hidden">
+
+    <header>
+
+      <div>
+
+        <b>Hesbah Online</b>
+
+        <small id="shop"></small>
+
+      </div>
+
+      <button
+        class="ghost"
+        onclick="logout()">
+        خروج
+      </button>
+
+    </header>
+
+
+    <!-- Statistics -->
+
+    <section class="grid stats">
+
+      <div class="card">
+
+        <small>
+          مبيعات اليوم
+        </small>
+
+        <strong id="sales">
+          0.00 ج.م
+        </strong>
+
+      </div>
+
+
+      <div class="card">
+
+        <small>
+          الفواتير
+        </small>
+
+        <strong id="count">
+          0
+        </strong>
+
+      </div>
+
+
+      <div class="card">
+
+        <small>
+          الأصناف
+        </small>
+
+        <strong id="productsCount">
+          0
+        </strong>
+
+      </div>
+
+
+      <div class="card">
+
+        <small>
+          قيمة المخزون
+        </small>
+
+        <strong id="stockValue">
+          0.00 ج.م
+        </strong>
+
+      </div>
+
+    </section>
+
+
+    <!-- Orders -->
+
+    <section class="card orders-section">
+
+      <div class="toolbar">
+
+        <h2>
+          🔔 الطلبات الجديدة
+        </h2>
+
+        <button onclick="loadOrders()">
+          تحديث
+        </button>
+
+      </div>
+
+      <div id="orders">
+
+        <div class="empty-orders">
+          لا توجد طلبات جديدة
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- Products -->
+
+    <section class="card">
+
+      <div class="toolbar">
+
+        <h2>
+          المخزون
+        </h2>
+
+        <button onclick="addProduct()">
+          + صنف
+        </button>
+
+      </div>
+
+
+      <div class="table">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>الكود</th>
+              <th>الصنف</th>
+              <th>السعر</th>
+              <th>المخزون</th>
+              <th></th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="products"></tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- Invoices -->
+
+    <section class="card">
+
+      <div class="toolbar">
+
+        <h2>
+          آخر الفواتير
+        </h2>
+
+      </div>
+
+
+      <div class="table">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>رقم</th>
+              <th>التاريخ</th>
+              <th>البائع</th>
+              <th>الإجمالي</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="invoices"></tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- JavaScript -->
+
+  <script src="/app.js?v=2"></script>
+
+</body>
+
+</html>
+:::

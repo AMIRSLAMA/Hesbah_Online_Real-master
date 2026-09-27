@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hesbah POS</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="brand-large">
+      <div class="logo-mark logo-image"><img class="brand-logo-img" src="assets/logo.svg" alt="Hesbah"></div>
+      <div><b>Hes<span>bah</span></b><small>نظام الكاشير الذكي</small></div>
+    </div>
+    <div class="owner-line">المهندس امير سلامه خلف الله <strong>01284321280</strong></div>
+    <h1>تسجيل الدخول</h1>
+    <p>سجّل الدخول للبدء وإدارة مبيعاتك بكل سهولة</p>
+    <label>اسم المستخدم<input id="loginUser" value="admin" autocomplete="username"></label>
+    <label>كلمة المرور<input id="loginPass" type="password" value="admin" autocomplete="current-password"></label>
+    <button class="primary big" id="loginBtn">تسجيل الدخول</button>
+    <div id="loginMsg" class="error"></div>
+    <small class="hint">الحساب الافتراضي للتجربة: admin / admin</small>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="side-brand">
+      <div class="logo-mark logo-image"><img class="brand-logo-img" src="assets/logo.svg" alt="Hesbah"></div>
+      <div><b>Hes<span>bah</span></b><small>POS</small></div>
+    </div>
+    <div class="user-box"><b id="sideUser">admin</b><small>مدير</small></div>
+    <nav id="nav">
+      <button data-page="pos" class="active">▣ <span>نقطة البيع</span></button>
+      <button data-page="products">▦ <span>المنتجات والمخزون</span></button>
+      <button data-page="invoices">▤ <span>الفواتير</span></button>
+      <button data-page="returns">↩ <span>المرتجعات</span></button>
+      <button data-page="customers">♙ <span>العملاء</span></button>
+      <button data-page="suppliers">♧ <span>الموردون والمشتريات</span></button>
+      <button data-page="reports">◷ <span>التقارير</span></button>
+      <button data-page="expenses">◇ <span>المصروفات</span></button>
+      <button data-page="shifts">◴ <span>الشيفتات</span></button>
+      <button data-page="users">♙ <span>المستخدمون</span></button>
+      <button data-page="qrmenu">▣ <span>قائمة الأسعار QR</span></button>
+      <button data-page="settings">⚙ <span>الإعدادات</span></button>
+    </nav>
+    <div class="side-bottom">
+      <span id="saveStatus">✓ البيانات محفوظة محليًا</span>
+      <small>Hesbah v1.3.0</small>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div><b id="pageTitle">نقطة البيع</b><small id="pageSub">بيع سريع وإدارة المبيعات</small></div>
+      <div class="top-actions"><button id="themeBtn" class="icon-btn" title="الوضع الداكن/الفاتح">☾</button><button id="logoutBtn" class="icon-btn">خروج</button></div>
+    </header>
+    <section id="content"></section>
+  </main>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-card" id="modalBody"></div></div>
+<div id="toast" class="toast"></div>
+<script src="app.js" charset="utf-8"></script>
+</body>
+</html>

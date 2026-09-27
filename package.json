@@ -1,0 +1,48 @@
+{
+  "name": "hesbah-pos",
+  "version": "1.3.0",
+  "description": "Hesbah POS - نظام كاشير وإدارة مبيعات محلي مع تفعيل وتجربة 15 يوم",
+  "main": "main.js",
+  "author": "Amir Salama Khalaf Allah",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "dist": "electron-builder --win nsis --x64",
+    "make-license": "node tools/create-license.js"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.amircasher.desktop",
+    "productName": "Hesbah",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**/*",
+      "!node_modules/.cache/**/*",
+      "!tools/private-key.pem"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Hesbah-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Hesbah"
+    }
+  }
+}

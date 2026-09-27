@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hesbah - الدليفري</title>
+<style>
+body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f6f9;color:#111827}
+.wrap{max-width:520px;margin:auto;padding:18px}
+.card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
+h1{margin-top:0}
+button{width:100%;border:0;border-radius:12px;padding:14px;margin-top:10px;font-size:17px;font-weight:bold;cursor:pointer}
+.start{background:#16a34a;color:#fff}.stop{background:#dc2626;color:#fff}.secondary{background:#2563eb;color:#fff}
+.status{padding:14px;border-radius:12px;background:#f3f4f6;margin:12px 0;line-height:1.8}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>🛵 Hesbah - شاشة الدليفري</h1>
+    <div id="info" class="status">جاري التحقق من الرابط...</div>
+    <button id="startBtn" class="start hidden" onclick="startTracking()">▶️ بدء التوصيل وإرسال موقعي</button>
+    <button id="stopBtn" class="stop hidden" onclick="stopTracking()">⏹️ إيقاف إرسال الموقع</button>
+    <button class="secondary" onclick="location.reload()">🔄 تحديث</button>
+  </div>
+</div>
+<script>
+const params=new URLSearchParams(location.search);
+const token=params.get('token')||'';
+let timer=null;
+let watchId=null;
+
+function info(t){document.getElementById('info').textContent=t}
+
+async function check(){
+  if(!token){info('رابط الدليفري غير موجود.');return;}
+  try{
+    const r=await fetch('/api/public/driver/status',{
+      headers:{Authorization:'Bearer '+token},
+      cache:'no-store'
+    });
+    const d=await r.json();
+    if(!r.ok||!d.ok){info(d.message||'الرابط غير صالح');return;}
+    info('الطلب '+d.order.number+' — '+d.order.status);
+    if(d.order.status==='out_for_delivery'){
+      document.getElementById('startBtn').classList.remove('hidden');
+    }else{
+      info('الطلب '+d.order.number+' حالته الآن: '+d.order.status+'\\nيجب أن تكون الحالة "خرج للتوصيل".');
+    }
+  }catch(e){info('تعذر الاتصال بالسيرفر');}
+}
+
+async function sendLocation(pos){
+  const c=pos.coords;
+  try{
+    const r=await fetch('/api/public/driver/location',{
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        Authorization:'Bearer '+token
+      },
+      body:JSON.stringify({
+        lat:c.latitude,
+        lng:c.longitude,
+        accuracy:c.accuracy
+      })
+    });
+    const d=await r.json();
+    if(!r.ok||!d.ok) throw new Error(d.message||'تعذر إرسال الموقع');
+    info('✅ يتم إرسال موقعك الآن\\nآخر تحديث: '+new Date().toLocaleTimeString('ar-EG'));
+  }catch(e){info('⚠️ '+e.message);}
+}
+
+function startTracking(){
+  if(!navigator.geolocation){info('هذا الجهاز لا يدعم GPS');return;}
+  document.getElementById('startBtn').classList.add('hidden');
+  document.getElementById('stopBtn').classList.remove('hidden');
+
+  watchId=navigator.geolocation.watchPosition(
+    sendLocation,
+    e=>info('⚠️ تعذر قراءة GPS: '+e.message),
+    {enableHighAccuracy:true,maximumAge:5000,timeout:15000}
+  );
+}
+
+function stopTracking(){
+  if(watchId!==null){
+    navigator.geolocation.clearWatch(watchId);
+    watchId=null;
+  }
+  document.getElementById('stopBtn').classList.add('hidden');
+  document.getElementById('startBtn').classList.remove('hidden');
+  info('تم إيقاف إرسال الموقع.');
+}
+
+check();
+</script>
+</body>
+</html>

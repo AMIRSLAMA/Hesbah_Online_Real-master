@@ -1,0 +1,589 @@
+const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto'),url=require('url');
+const PORT=Number(process.env.PORT||8080), HOST=process.env.HOST||'0.0.0.0';
+const DATA=path.join(__dirname,'data'); fs.mkdirSync(DATA,{recursive:true});
+const SECRET=process.env.HESBAH_SECRET||'CHANGE_THIS_SECRET_BEFORE_PRODUCTION';
+const DEMO={
+  shop:{
+    name:'متجري',
+    phone:'',
+    address:'',
+    device:'Online',
+    logo:''
+  },
+
+  owner:{
+    name:'إدارة Hesbah',
+    phone:''
+  },
+
+  printer:{
+    copies:1,
+    drawer:false,
+    printer:'النظام الافتراضي',
+    prep:false
+  },
+
+  activation:{
+    status:'مفعل',
+    code:'ONLINE',
+    customer:'Online'
+  },
+
+  users:[
+    {
+      id:1,
+      name:'المدير',
+      username:'admin',
+      passwordHash:hash('admin'),
+      role:'مدير'
+    }
+  ],
+
+  products:[
+    {
+      id:1,
+      code:'1001',
+      name:'مياه معدنية',
+      price:10,
+      cost:6,
+      stock:50,
+      unit:'قطعة',
+      image:''
+    },
+    {
+      id:2,
+      code:'1002',
+      name:'عصير',
+      price:15,
+      cost:9,
+      stock:35,
+      unit:'قطعة',
+      image:''
+    }
+  ],
+
+  customers:[],
+  suppliers:[],
+  expenses:[],
+  invoices:[],
+  returns:[],
+  shifts:[],
+  currentShift:null,
+  theme:'light',
+
+  paymentSettings:{
+    cash:{
+      enabled:true,
+      name:'دفع كاش عند الاستلام'
+    },
+
+    vodafoneCash:{
+      enabled:false,
+      name:'Vodafone Cash',
+      number:''
+    },
+
+    etisalatCash:{
+      enabled:false,
+      name:'Etisalat Cash',
+      number:''
+    },
+
+    orangeCash:{
+      enabled:false,
+      name:'Orange Cash',
+      number:''
+    },
+
+    wePay:{
+      enabled:false,
+      name:'WE Pay',
+      number:''
+    },
+
+    instapay:{
+      enabled:false,
+      name:'InstaPay',
+      account:''
+    },
+
+    card:{
+      enabled:false,
+      name:'Visa / Mastercard',
+      provider:'',
+      publicKey:''
+    }
+  }
+};
+function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
+function storeFile(id){return path.join(DATA,encodeURIComponent(id)+'.json')}
+function load(id){const f=storeFile(id);if(!fs.existsSync(f)){save(id,{...structuredClone(DEMO),storeId:id,revision:1});}try{return JSON.parse(fs.readFileSync(f,'utf8'))}catch{return structuredClone(DEMO)}}
+function save(id,d){fs.writeFileSync(storeFile(id),JSON.stringify(d,null,2),'utf8')}
+function sign(payload){const body=Buffer.from(JSON.stringify(payload)).toString('base64url');const sig=crypto.createHmac('sha256',SECRET).update(body).digest('base64url');return body+'.'+sig}
+function verifyToken(token){try{const [body,sig]=String(token||'').split('.');const good=crypto.createHmac('sha256',SECRET).update(body).digest('base64url');if(!sig||!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(good)))throw Error();const p=JSON.parse(Buffer.from(body,'base64url'));if(p.exp<Date.now())throw Error();return p}catch{return null}}
+function json(res,status,data){const out=JSON.stringify(data);res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Allow-Methods':'GET,POST,PUT,OPTIONS','Cache-Control':'no-store'});res.end(out)}
+function body(req){return new Promise((resolve,reject)=>{let s='';req.on('data',c=>{s+=c;if(s.length>10e6)req.destroy()});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch(e){reject(e)}});req.on('error',reject)})}
+function auth(req){const p=verifyToken((req.headers.authorization||'').replace(/^Bearer\s+/i,''));return p}
+function safeUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role}}
+function serveStatic(req,res){let p=url.parse(req.url).pathname;if(p==='/'||p==='')p='/index.html';const root=path.join(__dirname,'public');const f=path.normalize(path.join(root,p));if(!f.startsWith(root))return res.end('Forbidden');fs.readFile(f,(e,b)=>{if(e){if(p!=='/index.html')return serveFile404(res);return serveFile404(res)}const ext=path.extname(f);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Cache-Control':'no-cache'});res.end(b)})}
+function serveFile404(res){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end('Not found')}
+async function handle(req,res){if(req.method==='OPTIONS')return json(res,204,{});const u=url.parse(req.url,true),p=u.pathname;
+if(p==='/api/health')return json(res,200,{ok:true,service:'Hesbah Online',time:new Date().toISOString()});
+if(!p.startsWith('/api/')) return serveStatic(req,res);
+if(p==='/api/login'&&req.method==='POST'){const b=await body(req);const sid=String(b.storeId||'demo').trim()||'demo',db=load(sid),user=db.users.find(x=>String(x.username).toLowerCase()===String(b.username||'').trim().toLowerCase());if(!user||user.passwordHash!==hash(b.password||''))return json(res,401,{ok:false,message:'بيانات الدخول غير صحيحة'});const token=sign({storeId:sid,userId:user.id,role:user.role,exp:Date.now()+7*86400000});return json(res,200,{ok:true,token,user:safeUser(user),store:{name:db.shop.name},revision:db.revision||1})}
+if(!p.startsWith('/api/'))return serveStatic(req,res);
+if(p==='/api/public/orders'&&req.method==='POST'){
+  const b=await body(req);
+
+  const storeId=String(b.storeId||'demo').trim()||'demo';
+  const db=load(storeId);
+
+  const items=Array.isArray(b.items)
+    ? b.items.map(x=>({
+        productId:Number(x.productId||0),
+        code:String(x.code||''),
+        name:String(x.name||''),
+        price:Number(x.price||0),
+        qty:Number(x.qty||0)
+      })).filter(x=>x.qty>0)
+    : [];
+
+  if(!items.length){
+    return json(res,400,{
+      ok:false,
+      message:'الطلب لا يحتوي على أصناف'
+    });
+  }
+
+  const customer={
+    name:String(b.customer?.name||'').trim(),
+    phone:String(b.customer?.phone||'').trim(),
+    address:String(b.customer?.address||'').trim(),
+    building:String(b.customer?.building||'').trim(),
+    floor:String(b.customer?.floor||'').trim(),
+    apartment:String(b.customer?.apartment||'').trim(),
+    notes:String(b.customer?.notes||'').trim()
+  };
+
+  if(!customer.name||!customer.phone){
+    return json(res,400,{
+      ok:false,
+      message:'اسم العميل ورقم الهاتف مطلوبان'
+    });
+  }
+
+  const total=items.reduce(
+    (sum,x)=>sum+(x.price*x.qty),0
+  );
+
+  const order={
+    id:Date.now(),
+    number:'ON-'+Date.now().toString().slice(-7),
+    storeId,
+    source:'online',
+    status:'new',
+    createdAt:new Date().toISOString(),
+    customer,
+    items,
+    total,
+    paymentMethod:String(b.paymentMethod||'cash'),
+    table:String(b.table||''),
+    room:String(b.room||'')
+  };
+
+  if(!Array.isArray(db.orders))db.orders=[];
+
+  db.orders.unshift(order);
+  db.revision=(db.revision||1)+1;
+
+  save(storeId,db);
+
+  return json(res,201,{
+    ok:true,
+    order:{
+      id:order.id,
+      number:order.number,
+      status:order.status,
+      total:order.total,
+      createdAt:order.createdAt
+    }
+  });
+}
+// ===============================
+// Hesbah Online - Customer Register
+// ===============================
+if(p==='/api/public/register'&&req.method==='POST'){
+  const b=await body(req);
+
+  const storeId=String(b.storeId||'demo').trim()||'demo';
+  const db=load(storeId);
+
+  const name=String(b.name||'').trim();
+  const phone=String(b.phone||'').trim();
+  const password=String(b.password||'');
+
+  if(!name||!phone||!password){
+    return json(res,400,{
+      ok:false,
+      message:'الاسم ورقم الهاتف وكلمة المرور مطلوبة'
+    });
+  }
+
+  if(password.length<6){
+    return json(res,400,{
+      ok:false,
+      message:'كلمة المرور يجب أن تكون 6 أحرف على الأقل'
+    });
+  }
+
+  if(!Array.isArray(db.customers)){
+    db.customers=[];
+  }
+
+  const exists=db.customers.find(
+    x=>String(x.phone||'').trim()===phone
+  );
+
+  if(exists){
+    return json(res,409,{
+      ok:false,
+      message:'رقم الهاتف مسجل بالفعل'
+    });
+  }
+
+  const customer={
+    id:Date.now(),
+    name,
+    phone,
+    passwordHash:hash(password),
+    address:String(b.address||'').trim(),
+    building:String(b.building||'').trim(),
+    floor:String(b.floor||'').trim(),
+    apartment:String(b.apartment||'').trim(),
+    notes:String(b.notes||'').trim(),
+    createdAt:new Date().toISOString(),
+    ordersCount:0,
+    totalSpent:0
+  };
+
+  db.customers.unshift(customer);
+  db.revision=(db.revision||1)+1;
+
+  save(storeId,db);
+
+  return json(res,201,{
+    ok:true,
+    customer:{
+      id:customer.id,
+      name:customer.name,
+      phone:customer.phone,
+      address:customer.address,
+      building:customer.building,
+      floor:customer.floor,
+      apartment:customer.apartment,
+      createdAt:customer.createdAt
+    }
+  });
+}
+if(p==='/api/public/login'&&req.method==='POST'){
+  const b=await body(req);
+
+  const storeId=String(b.storeId||'demo').trim()||'demo';
+  const db=load(storeId);
+
+  const phone=String(b.phone||'').trim();
+  const password=String(b.password||'');
+
+  if(!phone||!password){
+    return json(res,400,{
+      ok:false,
+      message:'رقم الهاتف وكلمة المرور مطلوبة'
+    });
+  }
+
+  if(!Array.isArray(db.customers)){
+    db.customers=[];
+  }
+
+  const customer=db.customers.find(
+    x=>String(x.phone||'').trim()===phone
+  );
+
+  if(!customer||customer.passwordHash!==hash(password)){
+    return json(res,401,{
+      ok:false,
+      message:'رقم الهاتف أو كلمة المرور غير صحيحة'
+    });
+  }
+
+  const token=sign({
+    storeId,
+    customerId:customer.id,
+    role:'customer',
+    exp:Date.now()+30*86400000
+  });
+
+  return json(res,200,{
+    ok:true,
+    token,
+    customer:{
+      id:customer.id,
+      name:customer.name,
+      phone:customer.phone,
+      address:customer.address,
+      building:customer.building,
+      floor:customer.floor,
+      apartment:customer.apartment
+    }
+  });
+}
+if(p==='/api/public/payment-methods'&&req.method==='GET'){
+  const storeId=String(
+  u.query?.storeId || 'demo'
+).trim() || 'demo';
+
+  const db=load(storeId);
+
+  const payment=db.paymentSettings||{
+    cash:{
+      enabled:true,
+      name:'دفع كاش عند الاستلام'
+    },
+
+    vodafoneCash:{
+      enabled:false,
+      name:'Vodafone Cash',
+      number:''
+    },
+
+    etisalatCash:{
+      enabled:false,
+      name:'Etisalat Cash',
+      number:''
+    },
+
+    orangeCash:{
+      enabled:false,
+      name:'Orange Cash',
+      number:''
+    },
+
+    wePay:{
+      enabled:false,
+      name:'WE Pay',
+      number:''
+    },
+
+    instapay:{
+      enabled:false,
+      name:'InstaPay',
+      account:''
+    },
+
+    card:{
+      enabled:false,
+      name:'Visa / Mastercard',
+      provider:'',
+      publicKey:''
+    }
+  };
+
+  return json(res,200,{
+    ok:true,
+    payment
+  });
+}
+if(p==='/api/public/products'&&req.method==='GET'){
+  const storeId=String(
+    u.query?.storeId || 'demo'
+  ).trim() || 'demo';
+
+  const db=load(storeId);
+
+  const products=Array.isArray(db.products)
+    ? db.products
+        .map(x=>({
+          id:Number(x.id||0),
+          code:String(x.code||''),
+          name:String(x.name||''),
+          price:Number(x.price||0),
+          unit:String(x.unit||'قطعة'),
+          image:String(x.image||''),
+          available:Number(x.stock||0)>0
+        }))
+        .filter(x=>x.name)
+    : [];
+
+  return json(res,200,{
+    ok:true,
+    products
+  });
+}
+  const b=await body(req);
+  const db=load(a.storeId);
+
+  const current=db.paymentSettings||{};
+
+  db.paymentSettings={
+    cash:{
+      enabled:Boolean(b.cash?.enabled),
+      name:String(
+        b.cash?.name||'دفع كاش عند الاستلام'
+      )
+    },
+
+    vodafoneCash:{
+      enabled:Boolean(b.vodafoneCash?.enabled),
+      name:String(
+        b.vodafoneCash?.name||'Vodafone Cash'
+      ),
+      number:String(
+        b.vodafoneCash?.number||''
+      ).trim()
+    },
+
+    etisalatCash:{
+      enabled:Boolean(b.etisalatCash?.enabled),
+      name:String(
+        b.etisalatCash?.name||'Etisalat Cash'
+      ),
+      number:String(
+        b.etisalatCash?.number||''
+      ).trim()
+    },
+
+    orangeCash:{
+      enabled:Boolean(b.orangeCash?.enabled),
+      name:String(
+        b.orangeCash?.name||'Orange Cash'
+      ),
+      number:String(
+        b.orangeCash?.number||''
+      ).trim()
+    },
+
+    wePay:{
+      enabled:Boolean(b.wePay?.enabled),
+      name:String(
+        b.wePay?.name||'WE Pay'
+      ),
+      number:String(
+        b.wePay?.number||''
+      ).trim()
+    },
+
+    instapay:{
+      enabled:Boolean(b.instapay?.enabled),
+      name:String(
+        b.instapay?.name||'InstaPay'
+      ),
+      account:String(
+        b.instapay?.account||''
+      ).trim()
+    },
+
+    card:{
+      enabled:Boolean(b.card?.enabled),
+      name:String(
+        b.card?.name||'Visa / Mastercard'
+      ),
+      provider:String(
+        b.card?.provider||''
+      ).trim(),
+      publicKey:String(
+        b.card?.publicKey||''
+      ).trim()
+    }
+  };
+
+  db.revision=(db.revision||1)+1;
+
+  save(a.storeId,db);
+
+  return json(res,200,{
+    ok:true,
+    payment:db.paymentSettings
+  });
+}
+const a=auth(req);if(!a)return json(res,401,{ok:false,message:'انتهت الجلسة أو التوكن غير صالح'});const db=load(a.storeId);
+ if(p==='/api/bootstrap'&&req.method==='GET')return json(res,200,{ok:true,storeId:a.storeId,revision:db.revision||1,db:{...db,users:db.users.map(safeUser)}});
+ if(p==='/api/sync'&&req.method==='POST'){const b=await body(req);const rev=Number(b.revision||0);if(rev && rev!==(db.revision||1))return json(res,409,{ok:false,conflict:true,revision:db.revision||1,db});const incoming=b.db;if(!incoming||typeof incoming!=='object')return json(res,400,{ok:false,message:'بيانات المزامنة غير صالحة'});incoming.users=db.users;incoming.storeId=a.storeId;incoming.revision=(db.revision||1)+1;save(a.storeId,incoming);return json(res,200,{ok:true,revision:incoming.revision})}
+ if(p==='/api/products'&&req.method==='GET')return json(res,200,{ok:true,revision:db.revision||1,products:db.products||[]});
+ if(p==='/api/products'&&req.method==='PUT'){if(a.role!=='مدير')return json(res,403,{ok:false,message:'العملية للمدير فقط'});const b=await body(req), id=Number(b.id||Date.now()), item={id,code:String(b.code||''),name:String(b.name||''),price:Number(b.price||0),cost:Number(b.cost||0),stock:Number(b.stock||0),unit:String(b.unit||'قطعة'),image:String(b.image||'')};if(!item.name||!item.code)return json(res,400,{ok:false,message:'اسم الصنف والكود مطلوبان'});const i=db.products.findIndex(x=>x.id===id);if(i>=0)db.products[i]=item;else db.products.unshift(item);db.revision=(db.revision||1)+1;save(a.storeId,db);return json(res,200,{ok:true,product:item,revision:db.revision})}
+ if(p==='/api/invoices'&&req.method==='GET')return json(res,200,{ok:true,invoices:db.invoices||[],revision:db.revision||1});
+ if(p==='/api/orders'&&req.method==='POST'){
+  const b=await body(req);
+
+  const items=Array.isArray(b.items)?b.items.map(x=>({
+    productId:Number(x.productId||0),
+    code:String(x.code||''),
+    name:String(x.name||''),
+    price:Number(x.price||0),
+    qty:Number(x.qty||0),
+    total:Number(x.total||0)
+  })).filter(x=>x.name&&x.qty>0):[];
+
+  if(!items.length)
+    return json(res,400,{ok:false,message:'الطلب لا يحتوي على أصناف'});
+
+  const total=items.reduce((sum,x)=>sum+(Number(x.price)||0)*(Number(x.qty)||0),0);
+
+  const orders=db.orders||[];
+
+  const order={
+    id:Date.now(),
+    number:'ORD-'+Date.now(),
+    storeId:a.storeId,
+
+    type:String(b.type||'delivery'),
+
+    customer:{
+      name:String(b.customer?.name||''),
+      phone:String(b.customer?.phone||''),
+      address:String(b.customer?.address||''),
+      building:String(b.customer?.building||''),
+      floor:String(b.customer?.floor||''),
+      apartment:String(b.customer?.apartment||''),
+      notes:String(b.customer?.notes||'')
+    },
+
+    location:{
+      table:String(b.table||''),
+      room:String(b.room||'')
+    },
+
+    items,
+    total,
+
+    paymentMethod:String(b.paymentMethod||'cash'),
+    paymentStatus:'pending',
+
+    status:'new',
+
+    createdAt:new Date().toISOString()
+  };
+
+  orders.unshift(order);
+
+  db.orders=orders;
+  db.revision=(db.revision||1)+1;
+
+  save(a.storeId,db);
+
+  return json(res,201,{
+    ok:true,
+    order,
+    revision:db.revision
+  });
+}
+
+if(p==='/api/orders'&&req.method==='GET'){
+  return json(res,200,{
+    ok:true,
+    orders:db.orders||[],
+    revision:db.revision||1
+  });
+}
+ return serveStatic(req,res)
+}
+http.createServer((req,res)=>handle(req,res).catch(e=>json(res,500,{ok:false,message:e.message||'Server error'}))).listen(PORT,HOST,()=>console.log(`Hesbah Online running on http://${HOST}:${PORT}`));

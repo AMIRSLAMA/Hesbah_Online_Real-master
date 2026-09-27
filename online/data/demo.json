@@ -1,0 +1,756 @@
+{
+  "shop": {
+    "name": "متجري",
+    "phone": "",
+    "address": "",
+    "device": "Online",
+    "logo": ""
+  },
+  "owner": {
+    "name": "إدارة Hesbah",
+    "phone": ""
+  },
+  "printer": {
+    "copies": 1,
+    "drawer": false,
+    "printer": "النظام الافتراضي",
+    "prep": false
+  },
+  "activation": {
+    "status": "مفعل",
+    "code": "ONLINE",
+    "customer": "Online"
+  },
+  "users": [
+    {
+      "id": 1,
+      "name": "المدير",
+      "username": "admin",
+      "passwordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+      "role": "مدير"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "code": "1001",
+      "name": "مياه معدنية",
+      "price": 10,
+      "cost": 6,
+      "stock": 48,
+      "unit": "قطعة",
+      "image": ""
+    },
+    {
+      "id": 2,
+      "code": "1002",
+      "name": "عصير",
+      "price": 15,
+      "cost": 9,
+      "stock": 35,
+      "unit": "قطعة",
+      "image": ""
+    }
+  ],
+  "customers": [
+    {
+      "id": 1790392699556,
+      "name": "aa",
+      "phone": "0123456789",
+      "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+      "address": "",
+      "building": "",
+      "floor": "",
+      "apartment": "",
+      "notes": "",
+      "createdAt": "2026-09-26T03:18:19.556Z",
+      "ordersCount": 3,
+      "totalSpent": 55
+    },
+    {
+      "id": 1790385196532,
+      "name": "ahmed",
+      "phone": "01061477362",
+      "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+      "address": "",
+      "building": "",
+      "floor": "",
+      "apartment": "",
+      "notes": "",
+      "createdAt": "2026-09-26T01:13:16.532Z",
+      "ordersCount": 0,
+      "totalSpent": 0
+    },
+    {
+      "id": 1790385122652,
+      "name": "أمير سلامه صبحي السيد",
+      "phone": "01284321280",
+      "passwordHash": "ecf96b510d1ba96643bad70f231fc115f0ef69369ed0ea02fe85e5ab0fcd2b27",
+      "address": "",
+      "building": "",
+      "floor": "",
+      "apartment": "",
+      "notes": "",
+      "createdAt": "2026-09-26T01:12:02.652Z",
+      "ordersCount": 0,
+      "totalSpent": 0
+    },
+    {
+      "id": 1790384656390,
+      "name": "???? ??????",
+      "phone": "01111111111",
+      "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+      "address": "????? ??????",
+      "building": "10",
+      "floor": "3",
+      "apartment": "5",
+      "notes": "",
+      "createdAt": "2026-09-26T01:04:16.390Z",
+      "ordersCount": 3,
+      "totalSpent": 55
+    }
+  ],
+  "suppliers": [],
+  "expenses": [],
+  "invoices": [],
+  "returns": [],
+  "shifts": [],
+  "currentShift": null,
+  "theme": "light",
+  "storeId": "demo",
+  "revision": 49,
+  "orders": [
+    {
+      "id": 1790527993198,
+      "number": "ON-7993198",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "out_for_delivery",
+      "createdAt": "2026-09-27T16:53:13.198Z",
+      "addItemsUntil": 1790528032748,
+      "customerId": 1790392699556,
+      "customer": {
+        "id": 1790392699556,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "دجله",
+        "building": "103",
+        "floor": "1",
+        "apartment": "5",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "customerLocation": null,
+      "driverLocation": null,
+      "trackingActive": false,
+      "items": [
+        {
+          "productId": 2,
+          "code": "1002",
+          "name": "عصير",
+          "price": 15,
+          "qty": 1
+        }
+      ],
+      "total": 15,
+      "paymentMethod": "cash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-27T16:53:52.748Z"
+    },
+    {
+      "id": 1790527102809,
+      "number": "ON-7102809",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "completed",
+      "createdAt": "2026-09-27T16:38:22.809Z",
+      "addItemsUntil": 1790527160542,
+      "customerId": 1790392699556,
+      "customer": {
+        "id": 1790392699556,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "ahmed",
+        "building": "108",
+        "floor": "1",
+        "apartment": "5",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 2,
+          "code": "1002",
+          "name": "عصير",
+          "price": 15,
+          "qty": 2
+        }
+      ],
+      "total": 30,
+      "paymentMethod": "instapay",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-27T16:39:20.542Z"
+    },
+    {
+      "id": 1790461740372,
+      "number": "ON-1740372",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "completed",
+      "createdAt": "2026-09-26T22:29:00.372Z",
+      "addItemsUntil": 1790461863242,
+      "customerId": 1790384656390,
+      "customer": {
+        "id": 1790384656390,
+        "name": "???? ??????",
+        "phone": "01111111111",
+        "address": "ahmed",
+        "building": "10",
+        "floor": "3",
+        "apartment": "5",
+        "notes": ""
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 1,
+          "code": "1001",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 2
+        }
+      ],
+      "total": 20,
+      "paymentMethod": "cash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:31:03.242Z"
+    },
+    {
+      "id": 1790459222985,
+      "number": "ON-9222985",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T21:47:02.985Z",
+      "addItemsUntil": 1790461983495,
+      "customerId": 1790384656390,
+      "customer": {
+        "id": 1790384656390,
+        "name": "???? ??????",
+        "phone": "01111111111",
+        "address": "دجله جاردنز",
+        "building": "10",
+        "floor": "3",
+        "apartment": "5",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 2,
+          "code": "1002",
+          "name": "عصير",
+          "price": 15,
+          "qty": 1
+        },
+        {
+          "productId": 1,
+          "code": "1001",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 1
+        }
+      ],
+      "total": 25,
+      "paymentMethod": "vodafoneCash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:03.495Z"
+    },
+    {
+      "id": 1790458525794,
+      "number": "ON-8525794",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T21:35:25.794Z",
+      "addItemsUntil": 1790461985355,
+      "customerId": 1790384656390,
+      "customer": {
+        "id": 1790384656390,
+        "name": "???? ??????",
+        "phone": "01111111111",
+        "address": "????? ??????",
+        "building": "10",
+        "floor": "3",
+        "apartment": "5",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 1,
+          "code": "1001",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 1
+        }
+      ],
+      "total": 10,
+      "paymentMethod": "vodafoneCash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:05.355Z"
+    },
+    {
+      "id": 1790399159988,
+      "number": "ON-9159988",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T05:05:59.988Z",
+      "addItemsUntil": 1790461987835,
+      "customerId": 1790392699556,
+      "customer": {
+        "id": 1790392699556,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "دجله جاردنز",
+        "building": "103",
+        "floor": "1",
+        "apartment": "11",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 1,
+          "code": "1001",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 1
+        }
+      ],
+      "total": 10,
+      "paymentMethod": "cash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:07.835Z"
+    },
+    {
+      "id": 1790397601891,
+      "number": "ON-7601891",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T04:40:01.891Z",
+      "addItemsUntil": 1790461989386,
+      "customerId": null,
+      "customer": {
+        "id": null,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "دجله جاردنز",
+        "building": "108",
+        "floor": "1",
+        "apartment": "11",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 2,
+          "code": "1002",
+          "name": "عصير",
+          "price": 15,
+          "qty": 1
+        }
+      ],
+      "total": 15,
+      "paymentMethod": "vodafoneCash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:09.386Z"
+    },
+    {
+      "id": 1790395581419,
+      "number": "ON-5581419",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T04:06:21.419Z",
+      "customerId": null,
+      "customer": {
+        "id": null,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "دجله جاردنز",
+        "building": "22",
+        "floor": "1",
+        "apartment": "11",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 0,
+          "code": "",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 1
+        }
+      ],
+      "total": 10,
+      "paymentMethod": "cash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:11.968Z",
+      "addItemsUntil": 1790461991968
+    },
+    {
+      "id": 1790395432931,
+      "number": "ON-5432931",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T04:03:52.931Z",
+      "customerId": null,
+      "customer": {
+        "id": null,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "دجله جاردنز",
+        "building": "22",
+        "floor": "1",
+        "apartment": "11",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 0,
+          "code": "",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 3
+        },
+        {
+          "productId": 0,
+          "code": "",
+          "name": "عصير",
+          "price": 15,
+          "qty": 4
+        }
+      ],
+      "total": 90,
+      "paymentMethod": "cash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:13.712Z",
+      "addItemsUntil": 1790461993712
+    },
+    {
+      "id": 1790394705877,
+      "number": "ON-4705877",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T03:51:45.877Z",
+      "customerId": null,
+      "customer": {
+        "id": null,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "دجله جاردنز",
+        "building": "103",
+        "floor": "1",
+        "apartment": "11",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 0,
+          "code": "",
+          "name": "عصير",
+          "price": 15,
+          "qty": 2
+        }
+      ],
+      "total": 30,
+      "paymentMethod": "instapay",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:15.120Z",
+      "addItemsUntil": 1790461995120
+    },
+    {
+      "id": 1790394433758,
+      "number": "ON-4433758",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T03:47:13.758Z",
+      "customerId": null,
+      "customer": {
+        "id": null,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "دجله جاردنز",
+        "building": "103",
+        "floor": "1",
+        "apartment": "11",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 0,
+          "code": "",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 1
+        },
+        {
+          "productId": 0,
+          "code": "",
+          "name": "عصير",
+          "price": 15,
+          "qty": 1
+        }
+      ],
+      "total": 25,
+      "paymentMethod": "vodafoneCash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:16.807Z",
+      "addItemsUntil": 1790461996807
+    },
+    {
+      "id": 1790393435190,
+      "number": "ON-3435190",
+      "storeId": "demo",
+      "source": "online",
+      "type": "delivery",
+      "status": "rejected",
+      "createdAt": "2026-09-26T03:30:35.190Z",
+      "customerId": null,
+      "customer": {
+        "id": null,
+        "name": "aa",
+        "phone": "0123456789",
+        "address": "دجله جاردنز",
+        "building": "103",
+        "floor": "1",
+        "apartment": "11",
+        "notes": "رن الجرز مرتين"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 0,
+          "code": "",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 1
+        }
+      ],
+      "total": 10,
+      "paymentMethod": "vodafoneCash",
+      "paymentStatus": "pending",
+      "statusUpdatedAt": "2026-09-26T22:33:18.851Z",
+      "addItemsUntil": 1790461998851
+    },
+    {
+      "id": 1790391514876,
+      "number": "ON-1514876",
+      "storeId": "demo",
+      "source": "online",
+      "status": "rejected",
+      "createdAt": "2026-09-26T02:58:34.876Z",
+      "customer": {
+        "name": "???? ??????",
+        "phone": "01111111111",
+        "address": "دجله جاردنز",
+        "building": "108",
+        "floor": "1",
+        "apartment": "11",
+        "notes": "رن الجرز مرتين"
+      },
+      "items": [
+        {
+          "productId": 0,
+          "code": "",
+          "name": "عصير",
+          "price": 15,
+          "qty": 2
+        },
+        {
+          "productId": 0,
+          "code": "",
+          "name": "مياه معدنية",
+          "price": 10,
+          "qty": 2
+        }
+      ],
+      "total": 50,
+      "paymentMethod": "vodafoneCash",
+      "table": "",
+      "room": "",
+      "statusUpdatedAt": "2026-09-26T22:33:20.400Z",
+      "addItemsUntil": 1790462000400
+    },
+    {
+      "id": 1790381918710,
+      "number": "ON-1918710",
+      "storeId": "demo",
+      "source": "online",
+      "status": "rejected",
+      "createdAt": "2026-09-26T00:18:38.710Z",
+      "customer": {
+        "name": "???? ??????",
+        "phone": "01000000000",
+        "address": "????? ??????",
+        "building": "10",
+        "floor": "3",
+        "apartment": "5",
+        "notes": "??????"
+      },
+      "items": [
+        {
+          "productId": 1,
+          "code": "TEST001",
+          "name": "???? ??????",
+          "price": 100,
+          "qty": 2
+        }
+      ],
+      "total": 200,
+      "paymentMethod": "cash",
+      "table": "",
+      "room": "",
+      "statusUpdatedAt": "2026-09-26T22:33:22.068Z",
+      "addItemsUntil": 1790462002068
+    },
+    {
+      "id": 1790305625263,
+      "number": "ORD-1790305625263",
+      "storeId": "demo",
+      "type": "delivery",
+      "customer": {
+        "name": "???? ????",
+        "phone": "01000000000",
+        "address": "????? 10",
+        "building": "10",
+        "floor": "3",
+        "apartment": "8",
+        "notes": "??????"
+      },
+      "location": {
+        "table": "",
+        "room": ""
+      },
+      "items": [
+        {
+          "productId": 1,
+          "code": "1001",
+          "name": "???? ??????",
+          "price": 10,
+          "qty": 2,
+          "total": 0
+        },
+        {
+          "productId": 2,
+          "code": "1002",
+          "name": "????",
+          "price": 15,
+          "qty": 3,
+          "total": 0
+        }
+      ],
+      "total": 65,
+      "paymentMethod": "cash",
+      "paymentStatus": "pending",
+      "status": "rejected",
+      "createdAt": "2026-09-25T03:07:05.263Z",
+      "statusUpdatedAt": "2026-09-26T22:33:23.726Z",
+      "addItemsUntil": 1790462003727
+    }
+  ],
+  "paymentSettings": {
+    "cash": {
+      "enabled": true,
+      "name": "دفع كاش عند الاستلام"
+    },
+    "vodafoneCash": {
+      "enabled": true,
+      "name": "Vodafone Cash",
+      "number": "01061477362"
+    },
+    "etisalatCash": {
+      "enabled": false,
+      "name": "Etisalat Cash",
+      "number": ""
+    },
+    "orangeCash": {
+      "enabled": true,
+      "name": "Orange Cash",
+      "number": "01284321280"
+    },
+    "wePay": {
+      "enabled": false,
+      "name": "WE Pay",
+      "number": ""
+    },
+    "instapay": {
+      "enabled": true,
+      "name": "InstaPay",
+      "account": "01284321280"
+    },
+    "card": {
+      "enabled": false,
+      "name": "Visa / Mastercard",
+      "provider": "",
+      "publicKey": ""
+    }
+  }
+}
