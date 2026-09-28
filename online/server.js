@@ -63,6 +63,7 @@ const DEMO={
   ],
 
   customers:[],
+  drivers:[],
   suppliers:[],
   expenses:[],
   invoices:[],
@@ -646,6 +647,88 @@ if(p==='/api/public/login'&&req.method==='POST'){
   });
 }
 
+
+/* ===============================
+   Hesbah Online - Driver Accounts
+   =============================== */
+
+if(p==='/api/public/driver/login'&&req.method==='POST'){
+  const b=await body(req);
+  const storeId=String(b.storeId||'demo').trim()||'demo';
+  const db=load(storeId);
+  const username=String(b.username||'').trim();
+  const password=String(b.password||'');
+  const driver=Array.isArray(db.drivers)
+    ? db.drivers.find(x=>String(x.username||'').toLowerCase()===username.toLowerCase() && x.active!==false)
+    : null;
+  if(!driver||driver.passwordHash!==hash(password)){
+    return json(res,401,{ok:false,message:'اسم المستخدم أو كلمة المرور غير صحيحة'});
+  }
+  const token=sign({
+    storeId,
+    driverId:Number(driver.id),
+    role:'driver_account',
+    exp:Date.now()+30*86400000
+  });
+  return json(res,200,{
+    ok:true,
+    token,
+    driver:{
+      id:driver.id,
+      name:driver.name,
+      phone:driver.phone||'',
+      username:driver.username
+    }
+  });
+}
+
+if(p==='/api/public/driver/orders'&&req.method==='GET'){
+  const a=auth(req);
+  if(!a||a.role!=='driver_account') return json(res,401,{ok:false,message:'جلسة المندوب غير صالحة'});
+  const db=load(a.storeId);
+  const orders=(db.orders||[]).filter(x=>Number(x.driverId)===Number(a.driverId)&&!['completed','rejected'].includes(x.status));
+  return json(res,200,{ok:true,orders});
+}
+
+if(p==='/api/public/driver/status-update'&&req.method==='PUT'){
+  const a=auth(req);
+  if(!a||a.role!=='driver_account') return json(res,401,{ok:false,message:'جلسة المندوب غير صالحة'});
+  const b=await body(req);
+  const orderId=Number(b.orderId||0);
+  const db=load(a.storeId);
+  const order=(db.orders||[]).find(x=>Number(x.id)===orderId);
+  if(!order) return json(res,404,{ok:false,message:'الطلب غير موجود'});
+  if(Number(order.driverId)!==Number(a.driverId)) return json(res,403,{ok:false,message:'الطلب غير مسند إليك'});
+  if(order.status!=='out_for_delivery') return json(res,409,{ok:false,message:'الطلب ليس في مرحلة التوصيل'});
+  order.status='completed';
+  order.statusUpdatedAt=new Date().toISOString();
+  order.trackingActive=false;
+  db.revision=(db.revision||1)+1;
+  save(a.storeId,db);
+  return json(res,200,{ok:true,order:{id:order.id,status:order.status}});
+}
+
+if(p==='/api/public/driver/location-account'&&req.method==='PUT'){
+  const a=auth(req);
+  if(!a||a.role!=='driver_account') return json(res,401,{ok:false,message:'جلسة المندوب غير صالحة'});
+  const b=await body(req);
+  const orderId=Number(b.orderId||0);
+  const lat=Number(b.lat), lng=Number(b.lng), accuracy=Number(b.accuracy||0);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat<-90||lat>90||lng<-180||lng>180){
+    return json(res,400,{ok:false,message:'إحداثيات الموقع غير صحيحة'});
+  }
+  const db=load(a.storeId);
+  const order=(db.orders||[]).find(x=>Number(x.id)===orderId);
+  if(!order) return json(res,404,{ok:false,message:'الطلب غير موجود'});
+  if(Number(order.driverId)!==Number(a.driverId)) return json(res,403,{ok:false,message:'الطلب غير مسند إليك'});
+  if(order.status!=='out_for_delivery') return json(res,409,{ok:false,message:'لا يمكن إرسال الموقع قبل خروج الطلب للتوصيل'});
+  order.driverLocation={lat,lng,accuracy:Number.isFinite(accuracy)?accuracy:0,updatedAt:new Date().toISOString()};
+  order.trackingActive=true;
+  db.revision=(db.revision||1)+1;
+  save(a.storeId,db);
+  return json(res,200,{ok:true,location:order.driverLocation});
+}
+
 /* ===============================
    Hesbah Online - Customer Tracking
    =============================== */
@@ -1162,6 +1245,61 @@ const a=auth(req);if(!a)return json(res,401,{ok:false,message:'Ø§Ù†ØªÙ�
     order,
     revision:db.revision
   });
+}
+
+
+if(p==='/api/drivers'&&req.method==='GET'){
+  const a=auth(req);
+  if(!a) return json(res,401,{ok:false,message:'غير مصرح'});
+  const db=load(a.storeId);
+  const drivers=Array.isArray(db.drivers)?db.drivers.map(d=>({id:d.id,name:d.name,phone:d.phone||'',username:d.username,active:d.active!==false})):[]; 
+  return json(res,200,{ok:true,drivers});
+}
+
+if(p==='/api/drivers'&&req.method==='POST'){
+  const a=auth(req);
+  if(!a) return json(res,401,{ok:false,message:'غير مصرح'});
+  const b=await body(req);
+  const name=String(b.name||'').trim();
+  const username=String(b.username||'').trim();
+  const password=String(b.password||'');
+  const phone=String(b.phone||'').trim();
+  if(!name||!username||password.length<6) return json(res,400,{ok:false,message:'الاسم واسم المستخدم وكلمة مرور 6 أحرف على الأقل مطلوبة'});
+  const db=load(a.storeId);
+  if(!Array.isArray(db.drivers)) db.drivers=[];
+  if(db.drivers.some(d=>String(d.username||'').toLowerCase()===username.toLowerCase())){
+    return json(res,409,{ok:false,message:'اسم مستخدم المندوب مستخدم بالفعل'});
+  }
+  const driver={id:Date.now(),name,username,phone,passwordHash:hash(password),active:true,createdAt:new Date().toISOString()};
+  db.drivers.push(driver);
+  db.revision=(db.revision||1)+1;
+  save(a.storeId,db);
+  return json(res,201,{ok:true,driver:{id:driver.id,name,username,phone,active:true}});
+}
+
+if(p==='/api/orders/assign-driver'&&req.method==='PUT'){
+  const a=auth(req);
+  if(!a) return json(res,401,{ok:false,message:'غير مصرح'});
+  const b=await body(req);
+  const orderId=Number(b.orderId||0);
+  const driverId=Number(b.driverId||0);
+  const db=load(a.storeId);
+  const order=(db.orders||[]).find(x=>Number(x.id)===orderId);
+  if(!order) return json(res,404,{ok:false,message:'الطلب غير موجود'});
+  if(order.type!=='delivery') return json(res,400,{ok:false,message:'تعيين مندوب متاح لطلبات التوصيل فقط'});
+  if(driverId===0){
+    order.driverId=null; order.driverName=''; order.driverPhone=''; order.assignedAt=null;
+  }else{
+    const driver=(db.drivers||[]).find(x=>Number(x.id)===driverId&&x.active!==false);
+    if(!driver) return json(res,404,{ok:false,message:'المندوب غير موجود أو غير مفعل'});
+    order.driverId=driver.id;
+    order.driverName=driver.name;
+    order.driverPhone=driver.phone||'';
+    order.assignedAt=new Date().toISOString();
+  }
+  db.revision=(db.revision||1)+1;
+  save(a.storeId,db);
+  return json(res,200,{ok:true,order});
 }
 
 if(p==='/api/orders'&&req.method==='GET'){
