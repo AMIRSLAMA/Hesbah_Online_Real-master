@@ -134,189 +134,67 @@ function render() {
       '<tr><td colspan="4">لا توجد فواتير بعد</td></tr>';
 }
 
+let previousOrderSnapshot = '';
+let knownOrderIds = new Set();
+let soundEnabled = false;
+let orderAudioContext = null;
+let adminMap = null;
+let adminMarkers = {};
+let activityLog = [];
+
 async function loadOrders() {
   try {
     const d = await api('/api/orders');
+    const orders = d.orders || [];
+    const currentNew = orders.filter(o => o.status === 'new');
+    const signature = orders.map(o => String(o.id)+':'+o.status+':'+(o.driverId||0)).join('|');
+    const firstLoad = previousOrderSnapshot === '';
+    const newlyArrived = firstLoad ? [] : currentNew.filter(o => !knownOrderIds.has(String(o.id)));
 
-    state.ordersCache=d.orders||[];
-    renderOrders(d.orders || []);
+    state.ordersCache = orders;
+    orders.forEach(o => knownOrderIds.add(String(o.id)));
+    previousOrderSnapshot = signature;
+    renderOrders(orders);
+    updateDashboard(orders);
+    updateAdminMap(orders);
 
+    if (newlyArrived.length) {
+      newlyArrived.forEach(o => {
+        activityLog.unshift({icon:'🔔', text:'طلب جديد '+(o.number||('#'+o.id)), time:new Date()});
+      });
+      activityLog = activityLog.slice(0,8);
+      showNewOrderAlert(newlyArrived);
+    }
+    updateActivity();
+    setLiveConnection('متصل الآن');
   } catch (e) {
     console.error('Orders error:', e);
+    setLiveConnection('غير متصل');
   }
 }
 
 function renderOrders(orders) {
   const box = $('orders');
-
   if (!orders.length) {
-    box.innerHTML = `
-      <div class="empty-orders">
-        لا توجد طلبات
-      </div>
-    `;
+    box.innerHTML = '<div class="empty-orders">لا توجد طلبات</div>';
     return;
   }
-
-  box.innerHTML = orders.map(order => {
-
-    const type =
-      order.type === 'table'
-        ? `ترابيزة ${esc(order.location?.table || '')}`
-        : order.type === 'room'
-        ? `غرفة ${esc(order.location?.room || '')}`
-        : 'طلب توصيل';
-
-    const payment =
-      order.paymentMethod === 'cash'
-        ? 'نقدي عند الاستلام'
-        : 'دفع إلكتروني';
-
-    const items =
-      (order.items || [])
-        .map(item => `
-          <div class="order-item">
-            <span>${esc(item.name)}</span>
-            <b>× ${item.qty}</b>
-            <span>
-              ${money(
-                Number(item.price) *
-                Number(item.qty)
-              )}
-            </span>
-          </div>
-        `)
-        .join('');
-
-    return `
-      <div class="order-card">
-
-        <div class="order-head">
-          <div>
-            <strong>
-              🔔 ${esc(order.number)}
-            </strong>
-
-            <small>
-              ${new Date(order.createdAt)
-                .toLocaleString('ar-EG')}
-            </small>
-          </div>
-
-          <span class="order-status">
-            ${
-              order.status === 'new'
-                ? 'جديد'
-                : esc(order.status)
-            }
-          </span>
-        </div>
-
-        <div class="order-info">
-
-          <div>
-            👤
-            <b>العميل:</b>
-            ${esc(order.customer?.name || '')}
-          </div>
-
-          <div>
-            📞
-            <b>الهاتف:</b>
-            ${esc(order.customer?.phone || '')}
-          </div>
-
-          <div>
-            📍
-            <b>النوع:</b>
-            ${type}
-          </div>
-
-          ${
-            order.type === 'delivery'
-              ? `
-                <div>
-                  🏠
-                  <b>العنوان:</b>
-                  ${esc(order.customer?.address || '')}
-
-                  ${
-                    order.customer?.building
-                      ? ' - عمارة ' +
-                        esc(order.customer.building)
-                      : ''
-                  }
-
-                  ${
-                    order.customer?.floor
-                      ? ' - الدور ' +
-                        esc(order.customer.floor)
-                      : ''
-                  }
-
-                  ${
-                    order.customer?.apartment
-                      ? ' - شقة ' +
-                        esc(order.customer.apartment)
-                      : ''
-                  }
-                </div>
-              `
-              : ''
-          }
-
-        </div>
-
-        <div class="order-items">
-          ${items}
-        </div>
-
-        <div class="order-footer">
-
-          <div>
-            <b>
-              الإجمالي:
-              ${money(order.total)}
-            </b>
-
-            <small>
-              ${payment}
-            </small>
-          </div>
-
-          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-
-            ${driverSelect(order)}
-
-            ${
-              (NEXT_STATUS[order.status] || [])
-                .map(s => `
-                  <button
-                    onclick="changeOrderStatus('${order.id}','${s}')">
-                    ${STATUS_LABELS[s]}
-                  </button>
-                `)
-                .join('')
-            }
-
-            ${
-              order.status === 'out_for_delivery'
-                ? `
-                  <button
-                    onclick="createDriverLink('${order.id}')">
-                    📍 رابط الدليفري
-                  </button>
-                `
-                : ''
-            }
-
-          </div>
-
-        </div>
-
-      </div>
-    `;
-
+  const statusClass = s => 'status-'+String(s).replace(/_/g,'-');
+  box.innerHTML = orders.slice().sort((a,b)=>Number(b.id)-Number(a.id)).map(order => {
+    const type = order.type === 'table' ? 'ترابيزة '+esc(order.location?.table||'') :
+      order.type === 'room' ? 'غرفة '+esc(order.location?.room||'') : 'طلب توصيل';
+    const payment = order.paymentMethod === 'cash' ? 'نقدي عند الاستلام' : 'دفع إلكتروني';
+    const items=(order.items||[]).map(item=>'<div class="order-item"><span>'+esc(item.name)+'</span><b>× '+item.qty+'</b><span>'+money(Number(item.price)*Number(item.qty))+'</span></div>').join('');
+    const driver = order.driverName ? '<div class="driver-assigned">🛵 المندوب: <b>'+esc(order.driverName)+'</b>'+(order.driverPhone?' — '+esc(order.driverPhone):'')+'</div>' : '';
+    return '<div class="order-card '+(order.status==='new'?'new-order-card ':'')+statusClass(order.status)+'">'+
+      '<div class="order-head"><div><strong>'+(order.status==='new'?'🔔 ':'')+esc(order.number)+'</strong><small>'+new Date(order.createdAt).toLocaleString('ar-EG')+'</small></div>'+
+      '<span class="order-status">'+(STATUS_LABELS[order.status]||esc(order.status))+'</span></div>'+
+      '<div class="order-info"><div>👤 <b>العميل:</b> '+esc(order.customer?.name||'')+'</div><div>📞 <b>الهاتف:</b> '+esc(order.customer?.phone||'')+'</div><div>📍 <b>النوع:</b> '+type+'</div>'+
+      (order.type==='delivery'?'<div>🏠 <b>العنوان:</b> '+esc(order.customer?.address||'')+(order.customer?.building?' - عمارة '+esc(order.customer.building):'')+(order.customer?.floor?' - الدور '+esc(order.customer.floor):'')+(order.customer?.apartment?' - شقة '+esc(order.customer.apartment):'')+'</div>':'')+
+      '</div>'+driver+'<div class="order-items">'+items+'</div>'+
+      '<div class="order-footer"><div><b>الإجمالي: '+money(order.total)+'</b><small>'+payment+'</small></div><div class="order-actions">'+driverSelect(order)+
+      (NEXT_STATUS[order.status]||[]).map(s=>'<button onclick="changeOrderStatus(\''+order.id+'\',\''+s+'\')">'+STATUS_LABELS[s]+'</button>').join('')+
+      (order.status==='out_for_delivery'?'<button onclick="createDriverLink(\''+order.id+'\')">📍 رابط الدليفري</button>':'')+'</div></div></div>';
   }).join('');
 }
 
@@ -535,3 +413,93 @@ if (token) {
 
   load().catch(() => {});
 }
+// ===== Live Operations Dashboard =====
+function setLiveConnection(text){
+  const el=$('liveConnection');
+  if(el) el.innerHTML='<span class="connection-dot"></span>'+esc(text);
+}
+function updateDashboard(orders){
+  const n=orders.filter(o=>o.status==='new').length;
+  const p=orders.filter(o=>o.status==='preparing'||o.status==='accepted').length;
+  const d=orders.filter(o=>o.status==='out_for_delivery').length;
+  const done=orders.filter(o=>o.status==='completed').length;
+  if($('kpiNew')) $('kpiNew').textContent=n;
+  if($('kpiPrep')) $('kpiPrep').textContent=p;
+  if($('kpiDelivery')) $('kpiDelivery').textContent=d;
+  if($('kpiDone')) $('kpiDone').textContent=done;
+  const badge=$('newOrderBadge');
+  if(badge){ badge.textContent=n+' طلب جديد'; badge.classList.toggle('hidden',n===0); }
+  document.title=n ? '🔔 ('+n+') طلب جديد — Hesbah Online' : 'Hesbah Online';
+}
+function enableOrderSound(){
+  try{
+    orderAudioContext=orderAudioContext||new (window.AudioContext||window.webkitAudioContext)();
+    orderAudioContext.resume();
+    soundEnabled=true;
+    playOrderSound();
+    const b=document.querySelector('.sound-btn');
+    if(b)b.textContent='🔊 صوت الطلبات مفعل';
+  }catch(e){alert('المتصفح لا يدعم تشغيل الصوت تلقائياً');}
+}
+function playOrderSound(){
+  if(!soundEnabled||!orderAudioContext)return;
+  const now=orderAudioContext.currentTime;
+  [0,0.16,0.32].forEach((delay,i)=>{
+    const osc=orderAudioContext.createOscillator(), gain=orderAudioContext.createGain();
+    osc.type='sine'; osc.frequency.value=660+i*110;
+    gain.gain.setValueAtTime(0.0001,now+delay);
+    gain.gain.exponentialRampToValueAtTime(0.18,now+delay+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001,now+delay+0.13);
+    osc.connect(gain); gain.connect(orderAudioContext.destination);
+    osc.start(now+delay); osc.stop(now+delay+0.14);
+  });
+}
+function showNewOrderAlert(list){
+  playOrderSound();
+  const count=list.length;
+  const msg='🔔 وصل '+count+' طلب جديد'+(count>1?'':'');
+  const toast=document.createElement('div');
+  toast.className='dashboard-toast';
+  toast.innerHTML='<b>'+msg+'</b><small>تم تحديث لوحة الطلبات تلقائياً</small>';
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(),4500);
+  if('Notification' in window && Notification.permission==='granted' && document.hidden)
+    new Notification('Hesbah Online',{body:msg});
+}
+function updateActivity(){
+  const box=$('liveActivity');
+  if(!box)return;
+  if(!activityLog.length){box.innerHTML='<div class="activity-empty">بانتظار النشاط...</div>';return;}
+  box.innerHTML=activityLog.map(x=>'<div class="activity-item"><span>'+x.icon+'</span><div><b>'+esc(x.text)+'</b><small>'+new Date(x.time).toLocaleTimeString('ar-EG')+'</small></div></div>').join('');
+}
+function updateAdminMap(orders){
+  const active=orders.filter(o=>o.type==='delivery' && (o.status==='out_for_delivery'||o.status==='ready') && (o.customerLocation||o.driverLocation));
+  if(!window.L||!$('adminMap'))return;
+  if(!adminMap){
+    adminMap=L.map('adminMap').setView([30.0444,31.2357],12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(adminMap);
+  }
+  Object.values(adminMarkers).forEach(m=>m.remove());
+  adminMarkers={};
+  const points=[];
+  active.forEach(o=>{
+    if(o.customerLocation){
+      const p=[Number(o.customerLocation.lat),Number(o.customerLocation.lng)];
+      if(p.every(Number.isFinite)){const m=L.marker(p).addTo(adminMap).bindPopup('<b>🏠 '+esc(o.number)+'</b><br>'+esc(o.customer?.name||'العميل'));adminMarkers['c'+o.id]=m;points.push(p);}
+    }
+    if(o.driverLocation){
+      const p=[Number(o.driverLocation.lat),Number(o.driverLocation.lng)];
+      if(p.every(Number.isFinite)){const m=L.marker(p).addTo(adminMap).bindPopup('<b>🛵 '+esc(o.driverName||'المندوب')+'</b><br>'+esc(o.number));adminMarkers['d'+o.id]=m;points.push(p);
+        if(o.customerLocation){
+          const c=[Number(o.customerLocation.lat),Number(o.customerLocation.lng)];
+          if(c.every(Number.isFinite)) L.polyline([p,c],{dashArray:'8 8'}).addTo(adminMap);
+        }
+      }
+    }
+  });
+  const summary=$('mapSummary');
+  if(summary)summary.textContent=active.length ? active.length+' طلب توصيل ظاهر' : 'لا توجد مواقع نشطة';
+  if(points.length && adminMap._userHasMoved!==true) adminMap.fitBounds(points,{padding:[25,25],maxZoom:15});
+}
+setInterval(()=>{ if(token) loadOrders(); },5000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && token) loadOrders(); });
