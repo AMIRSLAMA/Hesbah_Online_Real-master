@@ -6,95 +6,163 @@
 <title>Hesbah - الدليفري</title>
 <style>
 body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f6f9;color:#111827}
-.wrap{max-width:520px;margin:auto;padding:18px}
-.card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
-h1{margin-top:0}
-button{width:100%;border:0;border-radius:12px;padding:14px;margin-top:10px;font-size:17px;font-weight:bold;cursor:pointer}
-.start{background:#16a34a;color:#fff}.stop{background:#dc2626;color:#fff}.secondary{background:#2563eb;color:#fff}
-.status{padding:14px;border-radius:12px;background:#f3f4f6;margin:12px 0;line-height:1.8}
-.hidden{display:none}
+.wrap{max-width:620px;margin:auto;padding:16px}.card{background:#fff;border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
+h1{margin-top:0}input,button{box-sizing:border-box;width:100%;border:0;border-radius:12px;padding:13px;margin-top:9px;font-size:16px}
+input{border:1px solid #d1d5db}.primary{background:#2563eb;color:#fff}.start{background:#16a34a;color:#fff}.stop{background:#dc2626;color:#fff}.done{background:#7c3aed;color:#fff}.secondary{background:#e5e7eb;color:#111827}
+.status{padding:13px;border-radius:12px;background:#f3f4f6;margin:10px 0;line-height:1.8}.order{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin:10px 0}.order b{display:block;margin-bottom:6px}.muted{color:#6b7280;font-size:13px}.hidden{display:none}.danger{color:#b91c1c}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="card">
-    <h1>🛵 Hesbah - شاشة الدليفري</h1>
-    <div id="info" class="status">جاري التحقق من الرابط...</div>
-    <button id="startBtn" class="start hidden" onclick="startTracking()">▶️ بدء التوصيل وإرسال موقعي</button>
-    <button id="stopBtn" class="stop hidden" onclick="stopTracking()">⏹️ إيقاف إرسال الموقع</button>
-    <button class="secondary" onclick="location.reload()">🔄 تحديث</button>
+  <div id="loginCard" class="card">
+    <h1>🛵 Hesbah - دخول الدليفري</h1>
+    <input id="store" value="demo" placeholder="كود المتجر">
+    <input id="username" placeholder="اسم المستخدم">
+    <input id="password" type="password" placeholder="كلمة المرور">
+    <button class="primary" onclick="driverLogin()">تسجيل الدخول</button>
+    <div id="loginMsg" class="status">أدخل بيانات حساب المندوب.</div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="card">
+      <h1>🛵 لوحة المندوب</h1>
+      <div id="driverInfo" class="status"></div>
+      <button class="secondary" onclick="loadOrders()">🔄 تحديث الطلبات</button>
+      <button class="secondary" onclick="driverLogout()">خروج</button>
+    </div>
+    <div class="card">
+      <h2>طلبات التوصيل</h2>
+      <div id="orders"></div>
+    </div>
+  </div>
+
+  <div id="legacyCard" class="hidden card">
+    <h1>📍 رابط تتبع التوصيل</h1>
+    <div id="legacyInfo" class="status"></div>
+    <button id="legacyStart" class="start hidden" onclick="startLegacy()">▶️ بدء إرسال الموقع</button>
+    <button id="legacyStop" class="stop hidden" onclick="stopLegacy()">⏹️ إيقاف إرسال الموقع</button>
   </div>
 </div>
+
 <script>
 const params=new URLSearchParams(location.search);
-const token=params.get('token')||'';
-let timer=null;
+const legacyToken=params.get('token')||'';
+let token=localStorage.getItem('hesbah_driver_token')||'';
+let driver=null;
 let watchId=null;
+let activeOrderId=null;
 
-function info(t){document.getElementById('info').textContent=t}
+const $=id=>document.getElementById(id);
+function showApp(){ $('loginCard').classList.add('hidden'); $('app').classList.remove('hidden'); }
+function msg(t){$('loginMsg').textContent=t}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 
-async function check(){
-  if(!token){info('رابط الدليفري غير موجود.');return;}
+async function driverLogin(){
   try{
-    const r=await fetch('/api/public/driver/status',{
-      headers:{Authorization:'Bearer '+token},
-      cache:'no-store'
-    });
+    const r=await fetch('/api/public/driver/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      storeId:$('store').value.trim()||'demo',username:$('username').value.trim(),password:$('password').value
+    })});
     const d=await r.json();
-    if(!r.ok||!d.ok){info(d.message||'الرابط غير صالح');return;}
-    info('الطلب '+d.order.number+' — '+d.order.status);
-    if(d.order.status==='out_for_delivery'){
-      document.getElementById('startBtn').classList.remove('hidden');
-    }else{
-      info('الطلب '+d.order.number+' حالته الآن: '+d.order.status+'\\nيجب أن تكون الحالة "خرج للتوصيل".');
-    }
-  }catch(e){info('تعذر الاتصال بالسيرفر');}
+    if(!r.ok||!d.ok) throw Error(d.message||'تعذر تسجيل الدخول');
+    token=d.token;driver=d.driver;localStorage.setItem('hesbah_driver_token',token);
+    showApp();renderDriver();loadOrders();
+  }catch(e){msg(e.message)}
+}
+
+function renderDriver(){
+  $('driverInfo').innerHTML='مرحباً <b>'+esc(driver?.name||'المندوب')+'</b><br>الهاتف: '+esc(driver?.phone||'-');
+}
+
+async function loadOrders(){
+  if(!token)return;
+  try{
+    const r=await fetch('/api/public/driver/orders',{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+    const d=await r.json();
+    if(!r.ok||!d.ok) throw Error(d.message||'تعذر تحميل الطلبات');
+    const orders=d.orders||[];
+    $('orders').innerHTML=orders.length?orders.map(renderOrder).join(''):'<div class="status">لا توجد طلبات مسندة إليك الآن.</div>';
+  }catch(e){$('orders').innerHTML='<div class="status danger">'+esc(e.message)+'</div>'}
+}
+
+function renderOrder(o){
+  const address=[o.customer?.address,o.customer?.building?'عمارة '+o.customer.building:'',o.customer?.floor?'الدور '+o.customer.floor:'',o.customer?.apartment?'شقة '+o.customer.apartment:''].filter(Boolean).join(' - ');
+  const tracking=Number(o.id)===Number(activeOrderId);
+  return '<div class="order">'+
+    '<b>🧾 '+esc(o.number)+'</b>'+
+    '<div>👤 '+esc(o.customer?.name||'')+'</div>'+
+    '<div>📞 '+esc(o.customer?.phone||'')+'</div>'+
+    '<div>📍 '+esc(address||'العنوان غير مسجل')+'</div>'+
+    '<div>💰 '+Number(o.total||0).toFixed(2)+' ج.م</div>'+
+    '<div class="muted">الحالة: '+esc(o.status)+'</div>'+
+    (o.status==='out_for_delivery'?
+      '<button class="start" onclick="startTracking('+Number(o.id)+')">'+(tracking?'📡 التتبع يعمل':'📡 بدء إرسال موقعي')+'</button>'+
+      '<button class="done" onclick="completeOrder('+Number(o.id)+')">✅ تم التوصيل</button>'
+      :'')+
+    (tracking?'<button class="stop" onclick="stopTracking()">⏹️ إيقاف إرسال الموقع</button>':'')+
+  '</div>';
+}
+
+function startTracking(orderId){
+  if(!navigator.geolocation){alert('هذا الجهاز لا يدعم GPS');return}
+  activeOrderId=Number(orderId);loadOrders();
+  if(watchId!==null) navigator.geolocation.clearWatch(watchId);
+  watchId=navigator.geolocation.watchPosition(sendLocation,e=>alert('تعذر قراءة GPS: '+e.message),{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
 }
 
 async function sendLocation(pos){
-  const c=pos.coords;
+  if(!activeOrderId)return;
   try{
-    const r=await fetch('/api/public/driver/location',{
-      method:'PUT',
-      headers:{
-        'Content-Type':'application/json',
-        Authorization:'Bearer '+token
-      },
-      body:JSON.stringify({
-        lat:c.latitude,
-        lng:c.longitude,
-        accuracy:c.accuracy
-      })
-    });
+    const r=await fetch('/api/public/driver/location-account',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({
+      orderId:activeOrderId,lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy
+    })});
     const d=await r.json();
-    if(!r.ok||!d.ok) throw new Error(d.message||'تعذر إرسال الموقع');
-    info('✅ يتم إرسال موقعك الآن\\nآخر تحديث: '+new Date().toLocaleTimeString('ar-EG'));
-  }catch(e){info('⚠️ '+e.message);}
-}
-
-function startTracking(){
-  if(!navigator.geolocation){info('هذا الجهاز لا يدعم GPS');return;}
-  document.getElementById('startBtn').classList.add('hidden');
-  document.getElementById('stopBtn').classList.remove('hidden');
-
-  watchId=navigator.geolocation.watchPosition(
-    sendLocation,
-    e=>info('⚠️ تعذر قراءة GPS: '+e.message),
-    {enableHighAccuracy:true,maximumAge:5000,timeout:15000}
-  );
+    if(!r.ok||!d.ok) throw Error(d.message||'تعذر إرسال الموقع');
+  }catch(e){console.error(e)}
 }
 
 function stopTracking(){
-  if(watchId!==null){
-    navigator.geolocation.clearWatch(watchId);
-    watchId=null;
-  }
-  document.getElementById('stopBtn').classList.add('hidden');
-  document.getElementById('startBtn').classList.remove('hidden');
-  info('تم إيقاف إرسال الموقع.');
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}
+  activeOrderId=null;loadOrders();
 }
 
-check();
+async function completeOrder(orderId){
+  if(!confirm('تأكيد أن الطلب تم توصيله للعميل؟'))return;
+  try{
+    const r=await fetch('/api/public/driver/status-update',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({orderId:Number(orderId)})});
+    const d=await r.json();if(!r.ok||!d.ok)throw Error(d.message||'تعذر إنهاء الطلب');
+    if(Number(activeOrderId)===Number(orderId))stopTracking();else loadOrders();
+  }catch(e){alert(e.message)}
+}
+
+function driverLogout(){stopTracking();localStorage.removeItem('hesbah_driver_token');token='';location.reload()}
+
+async function legacyCheck(){
+  if(!legacyToken)return;
+  $('loginCard').classList.add('hidden');$('legacyCard').classList.remove('hidden');
+  try{
+    const r=await fetch('/api/public/driver/status',{headers:{Authorization:'Bearer '+legacyToken}});
+    const d=await r.json();
+    if(!r.ok||!d.ok)throw Error(d.message||'الرابط غير صالح');
+    $('legacyInfo').textContent='الطلب '+d.order.number+' — الحالة: '+d.order.status;
+    if(d.order.status==='out_for_delivery')$('legacyStart').classList.remove('hidden');
+  }catch(e){$('legacyInfo').textContent=e.message}
+}
+function startLegacy(){
+  if(!navigator.geolocation)return;
+  $('legacyStart').classList.add('hidden');$('legacyStop').classList.remove('hidden');
+  watchId=navigator.geolocation.watchPosition(async p=>{
+    const c=p.coords;
+    try{await fetch('/api/public/driver/location',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+legacyToken},body:JSON.stringify({lat:c.latitude,lng:c.longitude,accuracy:c.accuracy})})}catch(e){}
+  },e=>{$('legacyInfo').textContent='⚠️ '+e.message},{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+}
+function stopLegacy(){if(watchId!==null)navigator.geolocation.clearWatch(watchId);watchId=null;$('legacyStop').classList.add('hidden');$('legacyStart').classList.remove('hidden')}
+
+if(legacyToken) legacyCheck();
+else if(token){
+  fetch('/api/public/driver/orders',{headers:{Authorization:'Bearer '+token}}).then(r=>r.json()).then(d=>{
+    if(d.ok){showApp();loadOrders();}else{localStorage.removeItem('hesbah_driver_token');token=''}
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>
