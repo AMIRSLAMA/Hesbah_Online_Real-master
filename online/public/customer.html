@@ -3548,5 +3548,79 @@ window.addEventListener(
 </script>
 
 <div id="trackingToast" class="tracking-toast"></div>
+
+<script>
+(function(){
+  const T={
+    "حسبة أونلاين":"Hesbah Online","إدارة المبيعات والمخزون من أي جهاز":"Manage sales and inventory from any device",
+    "كود المتجر":"Store Code","اسم المستخدم":"Username","كلمة المرور":"Password","تسجيل الدخول":"Login","خروج":"Logout",
+    "مبيعات اليوم":"Today's Sales","الفواتير":"Invoices","الأصناف":"Products","قيمة المخزون":"Inventory Value",
+    "لوحة التشغيل المباشر":"Live Operations Dashboard","جاري الاتصال...":"Connecting...","متصل الآن":"Connected",
+    "غير متصل":"Disconnected","طلبات جديدة":"New Orders","قيد التجهيز":"Preparing","خارج للتوصيل":"Out for Delivery",
+    "تم التسليم":"Completed","تفعيل صوت الطلبات":"Enable Order Sound","صوت الطلبات مفعل":"Order Sound Enabled",
+    "خريطة التوصيل المباشر":"Live Delivery Map","لا توجد مواقع نشطة":"No active locations","آخر النشاط":"Recent Activity",
+    "الطلبات الجديدة":"New Orders","تحديث":"Refresh","لا توجد طلبات جديدة":"No new orders",
+    "إدارة المندوبين":"Driver Management","اسم المندوب":"Driver Name","إضافة مندوب":"Add Driver",
+    "المخزون":"Inventory","+ صنف":"+ Product","الكود":"Code","الصنف":"Product","السعر":"Price",
+    "آخر الفواتير":"Recent Invoices","رقم":"Number","التاريخ":"Date","البائع":"Seller","الإجمالي":"Total",
+    "أهلاً بك 👋":"Welcome 👋","اطلب منتجاتك بسهولة":"Order your products easily","حساب جديد":"Create Account",
+    "رقم الهاتف":"Phone Number","أدخل رقم الهاتف":"Enter phone number","أدخل كلمة المرور":"Enter password",
+    "الاسم":"Name","اسم العميل":"Customer name","إنشاء الحساب":"Create Account","6 أحرف على الأقل":"At least 6 characters",
+    "اختار المنتجات التي تريدها وأضفها إلى السلة.":"Choose the products you want and add them to the cart.",
+    "المنتجات":"Products","🛒 السلة":"🛒 Cart","جاري تحميل المنتجات...":"Loading products...",
+    "سلة المشتريات":"Shopping Cart","الإجمالي":"Total","جنيه":"EGP","متابعة الطلب":"Continue to checkout",
+    "طلب جديد":"New Order","تم استلام الطلب":"Order received","تم قبول الطلب":"Order accepted",
+    "جاري تجهيز الطلب":"Preparing order","الطلب جاهز":"Order ready","خرج الطلب للتوصيل":"Out for delivery",
+    "تم التسليم":"Delivered","تم رفض الطلب":"Order rejected","🚚 الدليفري تحرك":"🚚 Driver is on the way",
+    "حسابي":"My Account","الطلبات":"Orders","الطلب":"Order","العنوان":"Address","ملاحظات":"Notes",
+    "إرسال الطلب":"Place Order","تأكيد الطلب":"Confirm Order","إلغاء":"Cancel","إغلاق":"Close",
+    "الدليفري":"Driver","المندوب":"Driver","بدء التتبع":"Start Tracking","إيقاف التتبع":"Stop Tracking",
+    "إتمام الطلب":"Complete Order","الطلبات المسندة":"Assigned Orders","لا توجد طلبات مسندة":"No assigned orders",
+    "تسجيل الخروج":"Logout","رقم الطلب":"Order Number","الهاتف":"Phone","الحالة":"Status",
+    "الطلب غير موجود":"Order not found","غير مصرح":"Unauthorized"
+  };
+  const keyPrefix='hesbah_lang';
+  let lang=localStorage.getItem(keyPrefix)||'ar';
+  function translate(){
+    const isEn=lang==='en';
+    document.documentElement.lang=isEn?'en':'ar';
+    document.documentElement.dir=isEn?'ltr':'rtl';
+    document.body.dir=isEn?'ltr':'rtl';
+    document.querySelectorAll('[data-lang-switch]').forEach(b=>b.textContent=isEn?'🇪🇬 العربية':'🇬🇧 English');
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(n=>{
+      if(!n.nodeValue.trim()||n.parentElement.closest('[data-no-translate]')) return;
+      const raw=n.nodeValue, trimmed=raw.trim();
+      if(isEn){
+        let v=T[trimmed];
+        if(v!==undefined) n.nodeValue=raw.replace(trimmed,v);
+        else if(trimmed.startsWith('🛵 المندوب:')) n.nodeValue=raw.replace('🛵 المندوب:','🛵 Driver:');
+        else if(trimmed.startsWith('الإجمالي:')) n.nodeValue=raw.replace('الإجمالي:','Total:');
+      }else{
+        for(const [ar,en] of Object.entries(T)){
+          if(trimmed===en){n.nodeValue=raw.replace(trimmed,ar);break;}
+        }
+      }
+    });
+    document.querySelectorAll('input[placeholder]').forEach(el=>{
+      const ar=el.getAttribute('data-ar-placeholder')||el.placeholder;
+      if(!el.getAttribute('data-ar-placeholder')) el.setAttribute('data-ar-placeholder',ar);
+      if(isEn && T[ar]) el.placeholder=T[ar]; else el.placeholder=ar;
+    });
+    document.title=isEn?'Hesbah Online':'حسبة أونلاين';
+  }
+  function addSwitch(){
+    if(document.querySelector('[data-lang-switch]')) return;
+    const b=document.createElement('button');
+    b.type='button'; b.dataset.langSwitch='1';
+    b.style.cssText='position:fixed;top:12px;left:12px;z-index:10000;border:0;border-radius:10px;padding:8px 12px;background:#111827;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.18)';
+    b.onclick=()=>{lang=lang==='ar'?'en':'ar';localStorage.setItem(keyPrefix,lang);translate();};
+    document.body.appendChild(b);
+  }
+  addSwitch(); translate();
+  new MutationObserver(()=>translate()).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
 </body>
 </html>
