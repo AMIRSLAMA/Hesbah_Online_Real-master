@@ -138,6 +138,7 @@ async function loadOrders() {
   try {
     const d = await api('/api/orders');
 
+    state.ordersCache=d.orders||[];
     renderOrders(d.orders || []);
 
   } catch (e) {
@@ -285,6 +286,8 @@ function renderOrders(orders) {
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
 
+            ${driverSelect(order)}
+
             ${
               (NEXT_STATUS[order.status] || [])
                 .map(s => `
@@ -335,6 +338,60 @@ const NEXT_STATUS = {
   out_for_delivery: ['completed']
 };
 
+
+async function loadDrivers(){
+  try{
+    const d=await api('/api/drivers');
+    state.drivers=d.drivers||[];
+    const box=$('drivers');
+    if(!box)return;
+    if(!state.drivers.length){
+      box.innerHTML='<div class="empty-orders">لا يوجد مندوبون. أضف أول مندوب.</div>';
+      return;
+    }
+    box.innerHTML=state.drivers.map(d=>'<div class="order-card" style="margin-top:8px;padding:12px"><b>🛵 '+esc(d.name)+'</b><div>👤 '+esc(d.username)+' — 📞 '+esc(d.phone||'-')+'</div></div>').join('');
+    renderOrders(state.ordersCache||[]);
+  }catch(e){console.error('Drivers error:',e)}
+}
+
+async function createDriver(){
+  try{
+    const d=await api('/api/drivers',{
+      method:'POST',
+      body:JSON.stringify({
+        name:$('driverName').value.trim(),
+        username:$('driverUsername').value.trim(),
+        password:$('driverPassword').value,
+        phone:$('driverPhone').value.trim()
+      })
+    });
+    $('driverName').value='';
+    $('driverUsername').value='';
+    $('driverPassword').value='';
+    $('driverPhone').value='';
+    await loadDrivers();
+    alert('تم إضافة المندوب: '+d.driver.name);
+  }catch(e){alert(e.message)}
+}
+
+async function assignDriver(orderId,driverId){
+  try{
+    await api('/api/orders/assign-driver',{
+      method:'PUT',
+      body:JSON.stringify({orderId:Number(orderId),driverId:Number(driverId)})
+    });
+    await loadOrders();
+  }catch(e){alert(e.message)}
+}
+
+function driverSelect(order){
+  if(order.type!=='delivery'||!Array.isArray(state.drivers)) return '';
+  return `<select onchange="assignDriver(${Number(order.id)},this.value)" style="padding:9px;border-radius:10px;border:1px solid #ddd">
+    <option value="0">بدون مندوب</option>
+    ${state.drivers.map(d=>`<option value="${d.id}" ${Number(order.driverId)===Number(d.id)?'selected':''}>${esc(d.name)}</option>`).join('')}
+  </select>`;
+}
+
 async function changeOrderStatus(id, status) {
   try {
     await api('/api/orders/status', {
@@ -346,6 +403,7 @@ async function changeOrderStatus(id, status) {
     });
 
     await loadOrders();
+    await loadDrivers();
   } catch (e) {
     alert(e.message || 'تعذر تغيير حالة الطلب');
   }
