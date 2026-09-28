@@ -10,6 +10,7 @@
 
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
   <meta name="application-version" content="1.3.0">
   <title>Hesbah Online v1.3.0</title>
@@ -146,6 +147,35 @@
 
     <!-- Orders -->
 
+    <section class="card dashboard-live">
+      <div class="live-toolbar">
+        <div>
+          <h2>📊 لوحة التشغيل المباشر</h2>
+          <small id="liveConnection">● جاري الاتصال...</small>
+        </div>
+        <div class="live-actions">
+          <span id="newOrderBadge" class="notify-badge hidden">0 طلب جديد</span>
+          <button class="sound-btn" onclick="enableOrderSound()">🔔 تفعيل صوت الطلبات</button>
+        </div>
+      </div>
+      <div class="grid live-stats">
+        <div class="live-stat new"><span>🆕</span><div><small>طلبات جديدة</small><strong id="kpiNew">0</strong></div></div>
+        <div class="live-stat prep"><span>🔥</span><div><small>قيد التجهيز</small><strong id="kpiPrep">0</strong></div></div>
+        <div class="live-stat delivery"><span>🛵</span><div><small>خارج للتوصيل</small><strong id="kpiDelivery">0</strong></div></div>
+        <div class="live-stat done"><span>✅</span><div><small>تم التسليم</small><strong id="kpiDone">0</strong></div></div>
+      </div>
+      <div class="live-grid">
+        <div class="map-wrap">
+          <div class="map-title"><b>🗺️ خريطة التوصيل المباشر</b><span id="mapSummary">لا توجد مواقع نشطة</span></div>
+          <div id="adminMap"></div>
+        </div>
+        <div class="recent-panel">
+          <div class="map-title"><b>⚡ آخر النشاط</b></div>
+          <div id="liveActivity" class="live-activity"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="card orders-section">
 
       <div class="toolbar">
@@ -274,7 +304,8 @@
 
   <!-- JavaScript -->
 
-  <script src="/app.js?v=2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/app.js?v=3"></script>
 
 </body>
 
