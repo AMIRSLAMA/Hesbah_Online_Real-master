@@ -784,7 +784,11 @@ if(p==='/api/public/orders/status'&&req.method==='GET'){
       total:Number(order.total||0),
       createdAt:order.createdAt,
       driverLocation:location,
-      customerLocation
+      customerLocation,
+      driverName:String(order.driverName||''),
+      driverPhone:String(order.driverPhone||''),
+      trackingActive:Boolean(order.trackingActive),
+      assignedAt:order.assignedAt||null
     }
   });
 }
