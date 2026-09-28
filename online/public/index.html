@@ -171,6 +171,22 @@
     </section>
 
 
+    <!-- Drivers -->
+    <section class="card">
+      <div class="toolbar">
+        <h2>🛵 إدارة المندوبين</h2>
+        <button onclick="loadDrivers()">تحديث</button>
+      </div>
+      <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <input id="driverName" placeholder="اسم المندوب">
+        <input id="driverUsername" placeholder="اسم المستخدم">
+        <input id="driverPassword" type="password" placeholder="كلمة المرور (6 أحرف+)">
+        <input id="driverPhone" placeholder="رقم الهاتف">
+        <button onclick="createDriver()">➕ إضافة مندوب</button>
+      </div>
+      <div id="drivers" style="margin-top:14px"></div>
+    </section>
+
     <!-- Products -->
 
     <section class="card">
