@@ -2987,6 +2987,7 @@ function renderOrderSuccess(){
         <div id="orderTrackingStatus">جاري تحميل الحالة...</div>
         <div id="orderTrackingSteps" class="tracking-steps"></div>
         <div id="orderTrackingInfo" class="tracking-info"></div>
+        <div id="orderDriverLive" class="driver-live-card hidden"></div>
         <div id="orderTrackingMap" class="tracking-map"></div>
       </div>
 
@@ -3086,6 +3087,47 @@ function statusLabel(status){
     completed:"تم التسليم",
     rejected:"تم رفض الطلب"
   })[status] || status || "غير معروف";
+}
+
+function showTrackingToast(message){
+  const el=$("trackingToast");
+  if(!el)return;
+  el.textContent=message;
+  el.style.display="block";
+  clearTimeout(window.trackingToastTimer);
+  window.trackingToastTimer=setTimeout(()=>{el.style.display="none"},4500);
+}
+function notifyOrderUpdate(status){
+  const key=String(window.lastOnlineOrder?.id||'')+':'+String(status||'');
+  const old=localStorage.getItem('hesbah_last_notified_status');
+  if(old===key)return;
+  localStorage.setItem('hesbah_last_notified_status',key);
+  if(document.hidden) showTrackingToast("🔔 "+statusLabel(status));
+  try{
+    if(document.hidden && 'Notification' in window && Notification.permission==='granted'){
+      new Notification('Hesbah — تحديث الطلب',{body:statusLabel(status)});
+    }
+  }catch(e){}
+}
+function renderDriverLive(order){
+  const box=$("orderDriverLive");
+  if(!box)return;
+  if(order.status!=="out_for_delivery" && !order.driverName){
+    box.classList.add("hidden");
+    return;
+  }
+  box.classList.remove("hidden");
+  const name=escapeHtml(order.driverName||"مندوب التوصيل");
+  const phone=String(order.driverPhone||"").trim();
+  const active=order.driverLocation;
+  box.innerHTML=
+    '<div class="driver-live-head">'+
+      '<div><span class="live-dot"></span> <span class="driver-live-name">'+name+'</span><div style="margin-top:5px;color:#555">'+
+      (active?'🟢 موقع الدليفري مباشر الآن':'🟡 في انتظار تحرك الدليفري')+
+      '</div></div>'+
+      '<div style="font-size:24px">🛵</div>'+
+    '</div>'+
+    (phone?'<div class="driver-actions"><a href="tel:'+escapeHtml(phone)+'">📞 اتصال بالمندوب</a></div>':'');
 }
 
 function renderTrackingSteps(status){
@@ -3240,6 +3282,10 @@ async function refreshOrderTracking(){
     window.lastOnlineOrder.statusUpdatedAt=order.statusUpdatedAt;
     window.lastOnlineOrder.driverLocation=order.driverLocation;
     window.lastOnlineOrder.customerLocation=order.customerLocation;
+    window.lastOnlineOrder.driverName=order.driverName||"";
+    window.lastOnlineOrder.driverPhone=order.driverPhone||"";
+    window.lastOnlineOrder.trackingActive=Boolean(order.trackingActive);
+    window.lastOnlineOrder.assignedAt=order.assignedAt||null;
 
     localStorage.setItem(
       "hesbah_last_online_order",
@@ -3254,6 +3300,9 @@ async function refreshOrderTracking(){
       statusEl.innerHTML=
         "<strong>"+escapeHtml(statusLabel(order.status))+"</strong>";
     }
+    renderDriverLive(order);
+    notifyOrderUpdate(order.status);
+    document.title="Hesbah • "+statusLabel(order.status);
 
     if(stepsEl){
       stepsEl.innerHTML=renderTrackingSteps(order.status);
@@ -3498,5 +3547,6 @@ window.addEventListener(
 
 </script>
 
+<div id="trackingToast" class="tracking-toast"></div>
 </body>
 </html>
