@@ -4,7 +4,7 @@ const DATA=path.join(__dirname,'data'); fs.mkdirSync(DATA,{recursive:true});
 const SECRET=process.env.HESBAH_SECRET||'CHANGE_THIS_SECRET_BEFORE_PRODUCTION';
 const DEMO={
   shop:{
-    name:'Ù…ØªØ¬Ø±ÙŠ',
+    name:'متجري',
     phone:'',
     address:'',
     device:'Online',
@@ -12,19 +12,19 @@ const DEMO={
   },
 
   owner:{
-    name:'Ø¥Ø¯Ø§Ø±Ø© Hesbah',
+    name:'إدارة Hesbah',
     phone:''
   },
 
   printer:{
     copies:1,
     drawer:false,
-    printer:'Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ',
+    printer:'النظام الافتراضي',
     prep:false
   },
 
   activation:{
-    status:'Ù…ÙØ¹Ù„',
+    status:'مفعل',
     code:'ONLINE',
     customer:'Online'
   },
@@ -32,7 +32,7 @@ const DEMO={
   users:[
     {
       id:1,
-      name:'Ø§Ù„Ù…Ø¯ÙŠØ±',
+      name:'المدير',
       username:'admin',
       passwordHash:hash('admin'),
       role:'Ù…Ø¯ÙŠØ±'
@@ -43,21 +43,21 @@ const DEMO={
     {
       id:1,
       code:'1001',
-      name:'Ù…ÙŠØ§Ù‡ Ù…Ø¹Ø¯Ù†ÙŠØ©',
+      name:'مياه معدنية',
       price:10,
       cost:6,
       stock:50,
-      unit:'Ù‚Ø·Ø¹Ø©',
+      unit:'قطعة',
       image:''
     },
     {
       id:2,
       code:'1002',
-      name:'Ø¹ØµÙŠØ±',
+      name:'عصير',
       price:15,
       cost:9,
       stock:35,
-      unit:'Ù‚Ø·Ø¹Ø©',
+      unit:'قطعة',
       image:''
     }
   ],
@@ -75,7 +75,7 @@ const DEMO={
   paymentSettings:{
     cash:{
       enabled:true,
-      name:'Ø¯ÙØ¹ ÙƒØ§Ø´ Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù…'
+      name:'دفع كاش عند الاستلام'
     },
 
     vodafoneCash:{
@@ -131,7 +131,7 @@ function serveFile404(res){res.writeHead(404,{'Content-Type':'text/plain; charse
 async function handle(req,res){if(req.method==='OPTIONS')return json(res,204,{});const u=url.parse(req.url,true),p=u.pathname;
 if(p==='/api/health')return json(res,200,{ok:true,service:'Hesbah Online',time:new Date().toISOString()});
 if(!p.startsWith('/api/')) return serveStatic(req,res);
-if(p==='/api/login'&&req.method==='POST'){const b=await body(req);const sid=String(b.storeId||'demo').trim()||'demo',db=load(sid),user=db.users.find(x=>String(x.username).toLowerCase()===String(b.username||'').trim().toLowerCase());if(!user||user.passwordHash!==hash(b.password||''))return json(res,401,{ok:false,message:'Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¯Ø®ÙˆÙ„ ØºÙŠØ± ØµØ­ÙŠØ­Ø©'});const token=sign({storeId:sid,userId:user.id,role:user.role,exp:Date.now()+7*86400000});return json(res,200,{ok:true,token,user:safeUser(user),store:{name:db.shop.name},revision:db.revision||1})}
+if(p==='/api/login'&&req.method==='POST'){const b=await body(req);const sid=String(b.storeId||'demo').trim()||'demo',db=load(sid),user=db.users.find(x=>String(x.username).toLowerCase()===String(b.username||'').trim().toLowerCase());if(!user||user.passwordHash!==hash(b.password||''))return json(res,401,{ok:false,message:'بيانات الدخول غير صحيحة'});const token=sign({storeId:sid,userId:user.id,role:user.role,exp:Date.now()+7*86400000});return json(res,200,{ok:true,token,user:safeUser(user),store:{name:db.shop.name},revision:db.revision||1})}
 if(!p.startsWith('/api/'))return serveStatic(req,res);
 if(p==='/api/public/orders'&&req.method==='POST'){
   const b=await body(req);
@@ -152,7 +152,7 @@ if(p==='/api/public/orders'&&req.method==='POST'){
   if(!items.length){
     return json(res,400,{
       ok:false,
-      message:'Ø§Ù„Ø·Ù„Ø¨ Ù„Ø§ ÙŠØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø£ØµÙ†Ø§Ù'
+      message:'الطلب لا يحتوي على أصناف'
     });
   }
 
@@ -200,7 +200,7 @@ const customer={
   if(!customer.name||!customer.phone){
     return json(res,400,{
       ok:false,
-      message:'Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„ ÙˆØ±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ Ù…Ø·Ù„ÙˆØ¨Ø§Ù†'
+      message:'اسم العميل ورقم الهاتف مطلوبان'
     });
   }
 
@@ -534,14 +534,14 @@ if(p==='/api/public/register'&&req.method==='POST'){
   if(!name||!phone||!password){
     return json(res,400,{
       ok:false,
-      message:'Ø§Ù„Ø§Ø³Ù… ÙˆØ±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ ÙˆÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù…Ø·Ù„ÙˆØ¨Ø©'
+      message:'الاسم ورقم الهاتف وكلمة المرور مطلوبة'
     });
   }
 
   if(password.length<6){
     return json(res,400,{
       ok:false,
-      message:'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† 6 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
+      message:'كلمة المرور يجب أن تكون 6 أحرف على الأقل'
     });
   }
 
@@ -556,7 +556,7 @@ if(p==='/api/public/register'&&req.method==='POST'){
   if(exists){
     return json(res,409,{
       ok:false,
-      message:'Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ Ù…Ø³Ø¬Ù„ Ø¨Ø§Ù„ÙØ¹Ù„'
+      message:'رقم الهاتف مسجل بالفعل'
     });
   }
 
@@ -606,7 +606,7 @@ if(p==='/api/public/login'&&req.method==='POST'){
   if(!phone||!password){
     return json(res,400,{
       ok:false,
-      message:'Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ ÙˆÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù…Ø·Ù„ÙˆØ¨Ø©'
+      message:'رقم الهاتف وكلمة المرور مطلوبة'
     });
   }
 
@@ -621,7 +621,7 @@ if(p==='/api/public/login'&&req.method==='POST'){
   if(!customer||customer.passwordHash!==hash(password)){
     return json(res,401,{
       ok:false,
-      message:'Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ Ø£Ùˆ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©'
+      message:'رقم الهاتف أو كلمة المرور غير صحيحة'
     });
   }
 
@@ -903,7 +903,7 @@ if(p==='/api/public/payment-methods'&&req.method==='GET'){
   const payment=db.paymentSettings||{
     cash:{
       enabled:true,
-      name:'Ø¯ÙØ¹ ÙƒØ§Ø´ Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù…'
+      name:'دفع كاش عند الاستلام'
     },
 
     vodafoneCash:{
@@ -963,7 +963,7 @@ if(p==='/api/public/products'&&req.method==='GET'){
           code:String(x.code||''),
           name:String(x.name||''),
           price:Number(x.price||0),
-          unit:String(x.unit||'Ù‚Ø·Ø¹Ø©'),
+          unit:String(x.unit||'قطعة'),
           image:String(x.image||''),
           available:Number(x.stock||0)>0
         }))
@@ -984,7 +984,7 @@ if(p==='/api/payment-settings'&&req.method==='PUT'){
     cash:{
       enabled:Boolean(b.cash?.enabled),
       name:String(
-        b.cash?.name||'Ø¯ÙØ¹ ÙƒØ§Ø´ Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù…'
+        b.cash?.name||'دفع كاش عند الاستلام'
       )
     },
 
@@ -1065,7 +1065,7 @@ const a=auth(req);if(!a)return json(res,401,{ok:false,message:'Ø§Ù†ØªÙ�
  if(p==='/api/bootstrap'&&req.method==='GET')return json(res,200,{ok:true,storeId:a.storeId,revision:db.revision||1,db:{...db,users:db.users.map(safeUser)}});
  if(p==='/api/sync'&&req.method==='POST'){const b=await body(req);const rev=Number(b.revision||0);if(rev && rev!==(db.revision||1))return json(res,409,{ok:false,conflict:true,revision:db.revision||1,db});const incoming=b.db;if(!incoming||typeof incoming!=='object')return json(res,400,{ok:false,message:'Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© ØºÙŠØ± ØµØ§Ù„Ø­Ø©'});incoming.users=db.users;incoming.storeId=a.storeId;incoming.revision=(db.revision||1)+1;save(a.storeId,incoming);return json(res,200,{ok:true,revision:incoming.revision})}
  if(p==='/api/products'&&req.method==='GET')return json(res,200,{ok:true,revision:db.revision||1,products:db.products||[]});
- if(p==='/api/products'&&req.method==='PUT'){if(a.role!=='Ù…Ø¯ÙŠØ±')return json(res,403,{ok:false,message:'Ø§Ù„Ø¹Ù…Ù„ÙŠØ© Ù„Ù„Ù…Ø¯ÙŠØ± ÙÙ‚Ø·'});const b=await body(req), id=Number(b.id||Date.now()), item={id,code:String(b.code||''),name:String(b.name||''),price:Number(b.price||0),cost:Number(b.cost||0),stock:Number(b.stock||0),unit:String(b.unit||'Ù‚Ø·Ø¹Ø©'),image:String(b.image||'')};if(!item.name||!item.code)return json(res,400,{ok:false,message:'Ø§Ø³Ù… Ø§Ù„ØµÙ†Ù ÙˆØ§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨Ø§Ù†'});const i=db.products.findIndex(x=>x.id===id);if(i>=0)db.products[i]=item;else db.products.unshift(item);db.revision=(db.revision||1)+1;save(a.storeId,db);return json(res,200,{ok:true,product:item,revision:db.revision})}
+ if(p==='/api/products'&&req.method==='PUT'){if(a.role!=='Ù…Ø¯ÙŠØ±')return json(res,403,{ok:false,message:'Ø§Ù„Ø¹Ù…Ù„ÙŠØ© Ù„Ù„Ù…Ø¯ÙŠØ± ÙÙ‚Ø·'});const b=await body(req), id=Number(b.id||Date.now()), item={id,code:String(b.code||''),name:String(b.name||''),price:Number(b.price||0),cost:Number(b.cost||0),stock:Number(b.stock||0),unit:String(b.unit||'قطعة'),image:String(b.image||'')};if(!item.name||!item.code)return json(res,400,{ok:false,message:'Ø§Ø³Ù… Ø§Ù„ØµÙ†Ù ÙˆØ§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨Ø§Ù†'});const i=db.products.findIndex(x=>x.id===id);if(i>=0)db.products[i]=item;else db.products.unshift(item);db.revision=(db.revision||1)+1;save(a.storeId,db);return json(res,200,{ok:true,product:item,revision:db.revision})}
  if(p==='/api/invoices'&&req.method==='GET')return json(res,200,{ok:true,invoices:db.invoices||[],revision:db.revision||1});
  if(p==='/api/orders/status'&&req.method==='PUT'){
 
@@ -1198,7 +1198,7 @@ const a=auth(req);if(!a)return json(res,401,{ok:false,message:'Ø§Ù†ØªÙ�
   })).filter(x=>x.name&&x.qty>0):[];
 
   if(!items.length)
-    return json(res,400,{ok:false,message:'Ø§Ù„Ø·Ù„Ø¨ Ù„Ø§ ÙŠØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø£ØµÙ†Ø§Ù'});
+    return json(res,400,{ok:false,message:'الطلب لا يحتوي على أصناف'});
 
   const total=items.reduce((sum,x)=>sum+(Number(x.price)||0)*(Number(x.qty)||0),0);
 
