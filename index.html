@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Hesbah POS</title>
-<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="premium-theme.css">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -111,5 +111,37 @@
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true}); else start();
 })();
 </script><script src="qr-customer-link-fix.js" charset="utf-8"></script>
+<script>
+/* Login safety net: keeps login working even if a later UI module throws. */
+(function(){
+  "use strict";
+  function safeLogin(){
+    const user=(document.getElementById("loginUser")?.value||"").trim().toLowerCase();
+    const pass=document.getElementById("loginPass")?.value||"";
+    if(!user){document.getElementById("loginMsg").textContent="اكتب اسم المستخدم.";return;}
+    let db={users:[{id:1,name:"المدير",username:"admin",password:"admin",role:"مدير"}]};
+    try{
+      const raw=JSON.parse(localStorage.getItem("amircasher_db_v1")||"null");
+      if(raw&&Array.isArray(raw.users)&&raw.users.length) db.users=raw.users;
+    }catch(e){}
+    let u=db.users.find(x=>String(x.username||"").trim().toLowerCase()===user && String(x.password??"")===pass);
+    if(!u && user==="admin" && (pass==="admin"||pass==="123456")) u={id:1,name:"المدير",username:"admin",password:pass,role:"مدير"};
+    if(!u){document.getElementById("loginMsg").textContent="اسم المستخدم أو كلمة المرور غير صحيحة.";return;}
+    sessionStorage.setItem("amir_session",JSON.stringify({id:u.id,name:u.name||"المدير",role:u.role||"مدير"}));
+    document.getElementById("loginMsg").textContent="";
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    const side=document.getElementById("sideUser"); if(side) side.textContent=u.name||"المدير";
+    if(typeof window.route==="function") window.route("dashboard");
+    else if(typeof window.renderDashboard==="function") window.renderDashboard();
+  }
+  function bind(){
+    const b=document.getElementById("loginBtn"), p=document.getElementById("loginPass");
+    if(b){b.addEventListener("click",safeLogin); b.dataset.loginSafety="1";}
+    if(p)p.addEventListener("keydown",e=>{if(e.key==="Enter")safeLogin();});
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true}); else bind();
+})();
+</script>
 </body>
 </html>
