@@ -101,7 +101,7 @@ function login(){
  $("#loginScreen").classList.add("hidden");
  $("#app").classList.remove("hidden");
  $("#sideUser").textContent=user.name;
- route("pos");
+ route("dashboard");
  checkLicense();
 }
 $("#loginBtn").onclick=login;$("#loginPass").onkeydown=e=>{if(e.key==="Enter")login()};
@@ -109,10 +109,48 @@ $("#logoutBtn").onclick=()=>{sessionStorage.removeItem("amir_session");location.
 $("#themeBtn").onclick=()=>{db.theme=db.theme==="dark"?"light":"dark";document.body.classList.toggle("dark",db.theme==="dark");save()};
 document.body.classList.toggle("dark",db.theme==="dark");
 
-const titles={pos:["نقطة البيع","بيع سريع وإدارة المبيعات"],products:["المنتجات والمخزون","إضافة الأصناف والأسعار والكميات"],invoices:["الفواتير","مراجعة وطباعة الفواتير"],returns:["المرتجعات","إرجاع الأصناف وتسجيل حركة المرتجع"],customers:["العملاء","بيانات العملاء وحساباتهم"],suppliers:["الموردون والمشتريات","إدارة الموردين والمشتريات"],reports:["التقارير","ملخص المبيعات والأرباح"],expenses:["المصروفات","تسجيل ومتابعة المصروفات"],shifts:["الشيفتات","فتح وإغلاق الشيفت"],users:["المستخدمون","حسابات البائعين والصلاحيات"],qrmenu:["قائمة الأسعار QR","QR شامل كل الأصناف والأسعار"],settings:["الإعدادات","بيانات المحل والطباعة والنسخ الاحتياطي والتفعيل"]};
+const titles={dashboard:["لوحة التحكم","ملخص الكاشير والطلبات الأونلاين"],pos:["نقطة البيع","بيع سريع وإدارة المبيعات"],products:["المنتجات والمخزون","إضافة الأصناف والأسعار والكميات"],invoices:["الفواتير","مراجعة وطباعة الفواتير"],returns:["المرتجعات","إرجاع الأصناف وتسجيل حركة المرتجع"],customers:["العملاء","بيانات العملاء وحساباتهم"],suppliers:["الموردون والمشتريات","إدارة الموردين والمشتريات"],reports:["التقارير","ملخص المبيعات والأرباح"],expenses:["المصروفات","تسجيل ومتابعة المصروفات"],shifts:["الشيفتات","فتح وإغلاق الشيفت"],users:["المستخدمون","حسابات البائعين والصلاحيات"],qrmenu:["قائمة الأسعار QR","QR شامل كل الأصناف والأسعار"],settings:["الإعدادات","بيانات المحل والطباعة والنسخ الاحتياطي والتفعيل"]};
+
+
+function renderDashboard(){
+  var today=new Date().toISOString().slice(0,10);
+  var inv=db.invoices.filter(function(i){return String(i.date||"").slice(0,10)===today});
+  var sales=inv.reduce(function(a,b){return a+Number(b.total||0)},0);
+  var low=db.products.filter(function(p){return Number(p.stock||0)<=5}).length;
+  $("#content").innerHTML='<div class="dashboard-hero card"><div class="muted" style="color:#dbe7fb">HESBAH POS + ONLINE</div><h1 style="color:#fff;margin:8px 0">لوحة التحكم الموحدة</h1><p style="color:#dbe7fb">الكاشير والطلبات الأونلاين والمتابعة من شاشة واحدة.</p></div>'+
+    '<div class="grid g4" style="margin-top:18px"><div class="card dashboard-kpi"><span class="muted">مبيعات اليوم</span><div class="stat-num">'+money(sales)+'</div></div>'+
+    '<div class="card dashboard-kpi"><span class="muted">فواتير اليوم</span><div class="stat-num">'+inv.length+'</div></div>'+
+    '<div class="card dashboard-kpi"><span class="muted">أصناف منخفضة</span><div class="stat-num">'+low+'</div></div>'+
+    '<div class="card dashboard-kpi"><span class="muted">العملاء</span><div class="stat-num">'+db.customers.length+'</div></div></div>'+
+    '<div class="card" style="margin-top:18px"><div class="page-head"><div><h2>الطلبات الأونلاين</h2><p>ملخص مباشر من السيرفر</p></div><button class="secondary" onclick="route(\\'onlineorders\\')">فتح الطلبات</button></div><div id="dashboardOnlineSummary" class="muted">جاري التحميل...</div></div>';
+  if(!db.online||!db.online.url){$("#dashboardOnlineSummary").textContent="اربط Hesbah Online من الإعدادات أولًا.";return}
+  getOnlineOrdersForDashboard().then(function(orders){
+    $("#dashboardOnlineSummary").innerHTML='<div class="grid g3"><div><b>'+orders.length+'</b><div class="muted">إجمالي الطلبات</div></div><div><b>'+orders.filter(function(o){return o.status==="new"}).length+'</b><div class="muted">طلبات جديدة</div></div><div><b>'+orders.filter(function(o){return o.status==="out_for_delivery"}).length+'</b><div class="muted">خرجت للتوصيل</div></div></div>';
+  }).catch(function(e){$("#dashboardOnlineSummary").textContent="تعذر الاتصال بالسيرفر: "+e.message});
+}
+async function getOnlineOrdersForDashboard(){
+  var d=await onlineFetch("/api/orders");
+  return Array.isArray(d.orders)?d.orders:[];
+}
+function renderOnlineOrders(){
+  if(!db.online||!db.online.url){$("#content").innerHTML='<div class="card"><h2>الطلبات الأونلاين</h2><p>اربط Hesbah Online من الإعدادات أولًا.</p></div>';return}
+  $("#content").innerHTML='<div class="page-head"><div><h1>الطلبات الأونلاين</h1><p>متابعة حالة طلبات العملاء.</p></div><button class="secondary" onclick="route(\\'dashboard\\')">لوحة التحكم</button></div><div class="card" id="onlineOrdersBox">جاري التحميل...</div>';
+  getOnlineOrdersForDashboard().then(function(orders){
+    if(!orders.length){$("#onlineOrdersBox").innerHTML='<p class="muted">لا توجد طلبات حتى الآن.</p>';return}
+    var rows=orders.map(function(o){
+      var opts=["accepted","preparing","ready","out_for_delivery","completed","rejected"].filter(function(s){return s!==o.status}).map(function(s){return '<option value="'+s+'">'+s+'</option>'}).join("");
+      return '<tr><td>'+escape(o.number||o.id)+'</td><td>'+escape((o.customer&&o.customer.name)||"")+'</td><td>'+money(o.total)+'</td><td>'+escape(o.status||"new")+'</td><td>'+new Date(o.createdAt||Date.now()).toLocaleString("ar-EG")+'</td><td><select onchange="updateOnlineOrderStatus('+Number(o.id)+',this.value)"><option value="'+escape(o.status||"new")+'">'+escape(o.status||"new")+'</option>'+opts+'</select></td></tr>';
+    }).join("");
+    $("#onlineOrdersBox").innerHTML='<div class="table-wrap"><table class="table"><thead><tr><th>الطلب</th><th>العميل</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th>تحديث</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).catch(function(e){$("#onlineOrdersBox").textContent="تعذر تحميل الطلبات: "+e.message});
+}
+window.updateOnlineOrderStatus=async function(id,status){
+  if(!isManager())return denySeller();
+  try{var d=await onlineFetch("/api/orders/status",{method:"PUT",body:JSON.stringify({orderId:Number(id),status:status})});toast(d.ok?"تم تحديث حالة الطلب":"تعذر تحديث الطلب");route("onlineorders")}catch(e){toast("تعذر تحديث الطلب: "+e.message)}
+};
 
 function route(page){
- const routes={pos:renderPOS,products:renderProducts,invoices:renderInvoices,returns:renderReturns,customers:renderCustomers,suppliers:renderSuppliers,reports:renderReports,expenses:renderExpenses,shifts:renderShifts,users:renderUsers,qrmenu:renderQRMenu,settings:renderSettings};
+ const routes={dashboard:renderDashboard,pos:renderPOS,products:renderProducts,invoices:renderInvoices,returns:renderReturns,customers:renderCustomers,suppliers:renderSuppliers,reports:renderReports,expenses:renderExpenses,shifts:renderShifts,users:renderUsers,qrmenu:renderQRMenu,onlineorders:renderOnlineOrders,settings:renderSettings};
  const fn=routes[page];
  if(!titles[page]||typeof fn!=="function"){
    console.error("Hesbah: invalid route",page);
@@ -371,6 +409,7 @@ window.saveActivation=async()=>{if(!isManager())return denySeller();const code=$
 window.backup=async()=>{if(!isManager())return denySeller();const r=await window.amir.saveBackup(JSON.stringify(db,null,2));if(!r.canceled)toast("تم إنشاء النسخة الاحتياطية")};
 window.restore=async()=>{if(!isManager())return denySeller();const r=await window.amir.restoreBackup();if(r.canceled)return;try{db=JSON.parse(r.content);save();toast("تم الاسترجاع بنجاح");setTimeout(()=>location.reload(),500)}catch{toast("ملف النسخة الاحتياطية غير صالح")}};
 
+Object.defineProperty(window,"hesbahDB",{configurable:true,get:function(){return db}});window.hesbahSave=save;window.hesbahToast=toast;window.hesbahEscape=escape;window.hesbahMoney=money;window.hesbahOpenModal=openModal;window.hesbahIsManager=isManager;window.hesbahDenySeller=denySeller;window.hesbahOnlineRequest=onlineFetch;
 const originalRoute=route;
 ensureDatabase();
 refreshBrandLogo();
