@@ -61,6 +61,55 @@
 
 <div id="modal" class="modal hidden"><div class="modal-card" id="modalBody"></div></div>
 <div id="toast" class="toast"></div>
-<script src="app.js" charset="utf-8"></script><script src="qr-customer-link-fix.js" charset="utf-8"></script>
+<script src="app.js" charset="utf-8"></script><script>// Make the POS QR code open the real customer ordering page.
+(function(){
+  "use strict";
+  const KEY="hesbah_customer_order_url";
+  const DEFAULT_URL="http://192.168.0.100:8080/customer.html?storeId=demo";
+
+  function customerUrl(){
+    return localStorage.getItem(KEY) || DEFAULT_URL;
+  }
+
+  function patchQR(){
+    const page=document.querySelector(".qr-new-page");
+    if(!page) return;
+    const img=page.querySelector(".qr-new-code img");
+    if(!img) return;
+
+    const target=customerUrl();
+    const qr="https://quickchart.io/qr?size=700&margin=2&ecLevel=M&text="+encodeURIComponent(target);
+    if(img.src!==qr) img.src=qr;
+    img.title="فتح صفحة طلب العميل";
+
+    let box=page.querySelector("#customerOrderLinkBox");
+    if(!box){
+      box=document.createElement("div");
+      box.id="customerOrderLinkBox";
+      box.style.cssText="margin-top:12px;padding:12px;border:1px solid var(--line,#ddd);border-radius:12px;background:#fff";
+      box.innerHTML='<div style="font-weight:700;margin-bottom:6px">🔗 رابط صفحة طلب العميل</div><input id="customerOrderUrl" style="width:100%;padding:9px;border:1px solid #ddd;border-radius:8px;direction:ltr" value="'+target.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'"><div style="display:flex;gap:8px;margin-top:8px"><button id="saveCustomerOrderUrl" class="secondary" type="button">حفظ الرابط</button><button id="openCustomerOrderPage" class="secondary" type="button">فتح الصفحة</button></div><small style="display:block;margin-top:7px;color:#777">يجب أن يكون الرابط قابلًا للوصول من موبايل العميل، وليس 127.0.0.1.</small>';
+      const code=page.querySelector(".qr-new-code");
+      if(code) code.parentElement.appendChild(box);
+      box.querySelector("#saveCustomerOrderUrl").onclick=function(){
+        const value=box.querySelector("#customerOrderUrl").value.trim();
+        if(!/^https?:\/\//i.test(value)) return alert("اكتب رابطًا يبدأ بـ http:// أو https://");
+        localStorage.setItem(KEY,value);
+        patchQR();
+        if(typeof window.toast==="function") window.toast("تم حفظ رابط صفحة الطلب وتحديث QR");
+      };
+      box.querySelector("#openCustomerOrderPage").onclick=function(){
+        window.open(box.querySelector("#customerOrderUrl").value.trim(),"_blank");
+      };
+    }
+  }
+
+  const start=()=>{
+    patchQR();
+    const root=document.getElementById("content")||document.body;
+    new MutationObserver(()=>patchQR()).observe(root,{childList:true,subtree:true});
+  };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true}); else start();
+})();
+</script><script src="qr-customer-link-fix.js" charset="utf-8"></script>
 </body>
 </html>
