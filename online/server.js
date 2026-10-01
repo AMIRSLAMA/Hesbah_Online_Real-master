@@ -116,7 +116,7 @@ const DEMO={
     }
   }
 };
-function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
+function normalizePhone(v){return String(v??'').replace(/[٠-٩۰-۹]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)>=0?'٠١٢٣٤٥٦٧٨٩'.indexOf(d):'۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[\s\-().]/g,'').trim()}\nfunction hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
 function storeFile(id){return path.join(DATA,encodeURIComponent(id)+'.json')}
 function load(id){const f=storeFile(id);if(!fs.existsSync(f)){save(id,{...structuredClone(DEMO),storeId:id,revision:1});}try{return JSON.parse(fs.readFileSync(f,'utf8'))}catch{return structuredClone(DEMO)}}
 function save(id,d){fs.writeFileSync(storeFile(id),JSON.stringify(d,null,2),'utf8')}
@@ -528,7 +528,7 @@ if(p==='/api/public/register'&&req.method==='POST'){
   const db=load(storeId);
 
   const name=String(b.name||'').trim();
-  const phone=String(b.phone||'').trim();
+  const phone=normalizePhone(b.phone);
   const password=String(b.password||'');
 
   if(!name||!phone||!password){
@@ -550,7 +550,7 @@ if(p==='/api/public/register'&&req.method==='POST'){
   }
 
   const exists=db.customers.find(
-    x=>String(x.phone||'').trim()===phone
+    x=>normalizePhone(x.phone)===phone
   );
 
   if(exists){
@@ -615,7 +615,7 @@ if(p==='/api/public/login'&&req.method==='POST'){
   }
 
   const customer=db.customers.find(
-    x=>String(x.phone||'').trim()===phone
+    x=>normalizePhone(x.phone)===phone
   );
 
   if(!customer||customer.passwordHash!==hash(password)){
@@ -647,6 +647,19 @@ if(p==='/api/public/login'&&req.method==='POST'){
   });
 }
 
+
+/* ===============================
+   Hesbah Online - Customer Session
+   =============================== */
+if(p==='/api/public/customer/session'&&req.method==='GET'){
+  const token=String(req.headers.authorization||'').replace(/^Bearer\\s+/i,'').trim();
+  const payload=verifyToken(token);
+  if(!payload||payload.role!=='customer') return json(res,401,{ok:false,message:'جلسة العميل غير صالحة'});
+  const db=load(payload.storeId);
+  const customer=Array.isArray(db.customers)?db.customers.find(x=>Number(x.id)===Number(payload.customerId)):null;
+  if(!customer) return json(res,401,{ok:false,message:'حساب العميل غير موجود'});
+  return json(res,200,{ok:true,customer:{id:customer.id,name:customer.name,phone:customer.phone,address:customer.address,building:customer.building,floor:customer.floor,apartment:customer.apartment}});
+}
 
 /* ===============================
    Hesbah Online - Driver Accounts
