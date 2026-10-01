@@ -112,11 +112,24 @@ document.body.classList.toggle("dark",db.theme==="dark");
 const titles={pos:["نقطة البيع","بيع سريع وإدارة المبيعات"],products:["المنتجات والمخزون","إضافة الأصناف والأسعار والكميات"],invoices:["الفواتير","مراجعة وطباعة الفواتير"],returns:["المرتجعات","إرجاع الأصناف وتسجيل حركة المرتجع"],customers:["العملاء","بيانات العملاء وحساباتهم"],suppliers:["الموردون والمشتريات","إدارة الموردين والمشتريات"],reports:["التقارير","ملخص المبيعات والأرباح"],expenses:["المصروفات","تسجيل ومتابعة المصروفات"],shifts:["الشيفتات","فتح وإغلاق الشيفت"],users:["المستخدمون","حسابات البائعين والصلاحيات"],qrmenu:["قائمة الأسعار QR","QR شامل كل الأصناف والأسعار"],settings:["الإعدادات","بيانات المحل والطباعة والنسخ الاحتياطي والتفعيل"]};
 
 function route(page){
- $$("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
- $("#pageTitle").textContent=titles[page][0];$("#pageSub").textContent=titles[page][1];
- const fn={pos:renderPOS,products:renderProducts,invoices:renderInvoices,returns:renderReturns,customers:renderCustomers,suppliers:renderSuppliers,reports:renderReports,expenses:renderExpenses,shifts:renderShifts,users:renderUsers,qrmenu:renderQRMenu,settings:renderSettings}[page];
- fn();window.scrollTo(0,0);
+ const routes={pos:renderPOS,products:renderProducts,invoices:renderInvoices,returns:renderReturns,customers:renderCustomers,suppliers:renderSuppliers,reports:renderReports,expenses:renderExpenses,shifts:renderShifts,users:renderUsers,qrmenu:renderQRMenu,settings:renderSettings};
+ const fn=routes[page];
+ if(!titles[page]||typeof fn!=="function"){
+   console.error("Hesbah: invalid route",page);
+   return toast("تعذر فتح الصفحة المطلوبة");
+ }
+ $("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
+ $("#pageTitle").textContent=titles[page][0];
+ $("#pageSub").textContent=titles[page][1];
+ try{
+   fn();
+   window.scrollTo(0,0);
+ }catch(error){
+   console.error("Hesbah page render error:",page,error);
+   toast("حدث خطأ أثناء فتح الصفحة: "+(error?.message||"خطأ غير معروف"));
+ }
 }
+window.route=route;
 $("#nav").onclick=e=>{const b=e.target.closest("button[data-page]");if(!b)return;const sellerPages=["pos","products","invoices","customers","qrmenu"];if(currentUser().role==="بائع"&&!sellerPages.includes(b.dataset.page))return denySeller();route(b.dataset.page)};
 
 function renderPOS(){
