@@ -190,8 +190,14 @@ function renderOnlineOrders(){
     var orders=data[0],drivers=data[1];
     if(!orders.length){$("#onlineOrdersBox").innerHTML='<p class="muted">لا توجد طلبات حتى الآن.</p>';return}
     var canAssign=(currentUser().role==="مدير"||currentUser().role==="بائع");
+    var nextStatus={
+      new:{status:"accepted",label:"قبول الطلب"},
+      accepted:{status:"preparing",label:"بدء التجهيز"},
+      preparing:{status:"ready",label:"تم التجهيز"},
+      ready:{status:"out_for_delivery",label:"إرسال للتوصيل"},
+      out_for_delivery:{status:"completed",label:"تم التسليم"}
+    };
     var rows=orders.map(function(o){
-      var opts=["accepted","preparing","ready","out_for_delivery","completed","rejected"].filter(function(st){return st!==o.status}).map(function(st){return '<option value="'+st+'">'+st+'</option>'}).join("");
       var delivery=(String(o.type||"delivery")==="delivery");
       var assigned=o.driverName?('<b>'+escape(o.driverName)+'</b>'+(o.driverPhone?'<br><small>'+escape(o.driverPhone)+'</small>':'')+(o.status==="out_for_delivery"&&o.trackingActive?'<br><small>📍 التتبع فعال</small>':'') ): '<span class="muted">غير مسند</span>';
       var driverCell=delivery
@@ -202,7 +208,12 @@ function renderOnlineOrders(){
             : '')+
           '</div>'
         : '<span class="muted">استلام من المحل</span>';
-      return '<tr><td>'+escape(o.number||o.id)+'</td><td>'+escape((o.customer&&o.customer.name)||"")+'<br><small>'+escape((o.customer&&o.customer.phone)||"")+'</small></td><td>'+money(o.total)+'</td><td>'+escape(o.status||"new")+'</td><td>'+driverCell+'</td><td>'+new Date(o.createdAt||Date.now()).toLocaleString("ar-EG")+'</td><td><select onchange="updateOnlineOrderStatus('+Number(o.id)+',this.value)"><option value="'+escape(o.status||"new")+'">'+escape(o.status||"new")+'</option>'+opts+'</select></td></tr>';
+      var ns=nextStatus[o.status];
+      var statusCell=ns
+        ? '<button class="primary" style="white-space:nowrap" onclick="updateOnlineOrderStatus('+Number(o.id)+',\''+ns.status+'\')">'+ns.label+'</button>'+
+          (o.status==="new"&&canAssign?'<button class="danger" style="margin-top:6px;white-space:nowrap" onclick="updateOnlineOrderStatus('+Number(o.id)+',\'rejected\')">رفض الطلب</button>':'')
+        : '<span class="muted">'+escape(o.status||"")+'</span>';
+      return '<tr><td>'+escape(o.number||o.id)+'</td><td>'+escape((o.customer&&o.customer.name)||"")+'<br><small>'+escape((o.customer&&o.customer.phone)||"")+'</small></td><td>'+money(o.total)+'</td><td>'+escape(o.status||"new")+'</td><td>'+driverCell+'</td><td>'+new Date(o.createdAt||Date.now()).toLocaleString("ar-EG")+'</td><td>'+statusCell+'</td></tr>';
     }).join("");
     $("#onlineOrdersBox").innerHTML='<div class="table-wrap"><table class="table"><thead><tr><th>الطلب</th><th>العميل</th><th>الإجمالي</th><th>الحالة</th><th>🚚 المندوب</th><th>التاريخ</th><th>تحديث</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   }).catch(function(e){$("#onlineOrdersBox").textContent="تعذر تحميل الطلبات: "+e.message});
