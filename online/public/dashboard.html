@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hesbah Online Dashboard</title>
+<link rel="stylesheet" href="/dashboard/styles.css">
+<script src="/dashboard/dashboard-web.js"></script>
+</head>
+<body>
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="brand-large">
+      <div class="logo-mark logo-image"><img class="brand-logo-img" src="assets/logo.svg" alt="Hesbah"></div>
+      <div><b>Hes<span>bah</span></b><small>نظام الكاشير الذكي</small></div>
+    </div>
+    <div class="owner-line">المهندس امير سلامه خلف الله <strong>01284321280</strong></div>
+    <h1>تسجيل الدخول</h1>
+    <p>سجّل الدخول للبدء وإدارة مبيعاتك بكل سهولة</p>
+    <label>اسم المستخدم<input id="loginUser" value="admin" autocomplete="username"></label>
+    <label>كلمة المرور<input id="loginPass" type="password" value="admin" autocomplete="current-password"></label>
+    <button class="primary big" id="loginBtn">تسجيل الدخول</button>
+    <div id="loginMsg" class="error"></div>
+    <small class="hint">الحساب الافتراضي للتجربة: admin / admin</small>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="side-brand">
+      <div class="logo-mark logo-image"><img class="brand-logo-img" src="assets/logo.svg" alt="Hesbah"></div>
+      <div><b>Hes<span>bah</span></b><small>POS</small></div>
+    </div>
+    <div class="user-box"><b id="sideUser">admin</b><small>مدير</small></div>
+    <nav id="nav"><button data-page="dashboard" class="active">⌂ <span>لوحة التحكم</span></button>
+      <button data-page="pos" class="active">▣ <span>نقطة البيع</span></button>
+      <button data-page="products">▦ <span>المنتجات والمخزون</span></button>
+      <button data-page="invoices">▤ <span>الفواتير</span></button>
+      <button data-page="returns">↩ <span>المرتجعات</span></button>
+      <button data-page="customers">♙ <span>العملاء</span></button>
+      <button data-page="suppliers">♧ <span>الموردون والمشتريات</span></button>
+      <button data-page="reports">◷ <span>التقارير</span></button>
+      <button data-page="expenses">◇ <span>المصروفات</span></button>
+      <button data-page="shifts">◴ <span>الشيفتات</span></button>
+      <button data-page="users">♙ <span>المستخدمون</span></button>
+      <button data-page="qrmenu">▣ <span>قائمة الأسعار QR</span></button>
+      <button data-page="onlineorders">🛒 <span>الطلبات الأونلاين</span></button><button data-page="settings">⚙ <span>الإعدادات</span></button>
+    </nav>
+    <div class="side-bottom">
+      <span id="saveStatus">✓ البيانات محفوظة محليًا</span>
+      <small>Hesbah v1.3.0</small>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div><b id="pageTitle">نقطة البيع</b><small id="pageSub">بيع سريع وإدارة المبيعات</small></div>
+      <div class="top-actions"><button id="themeBtn" class="icon-btn" title="الوضع الداكن/الفاتح">☾</button><button id="logoutBtn" class="icon-btn">خروج</button></div>
+    </header>
+    <section id="content"></section>
+  </main>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-card" id="modalBody"></div></div>
+<div id="toast" class="toast"></div>
+<script src="/dashboard/app.js" charset="utf-8"></script><script>// Make the POS QR code open the real customer ordering page.
+(function(){
+  "use strict";
+  const KEY="hesbah_customer_order_url";
+  const DEFAULT_URL="http://192.168.0.100:8080/customer.html?storeId=demo";
+
+  function customerUrl(){
+    return localStorage.getItem(KEY) || DEFAULT_URL;
+  }
+
+  function patchQR(){
+    const page=document.querySelector(".qr-new-page");
+    if(!page) return;
+    const img=page.querySelector(".qr-new-code img");
+    if(!img) return;
+
+    const target=customerUrl();
+    const qr="https://quickchart.io/qr?size=700&margin=2&ecLevel=M&text="+encodeURIComponent(target);
+    if(img.src!==qr) img.src=qr;
+    img.title="فتح صفحة طلب العميل";
+
+    let box=page.querySelector("#customerOrderLinkBox");
+    if(!box){
+      box=document.createElement("div");
+      box.id="customerOrderLinkBox";
+      box.style.cssText="margin-top:12px;padding:12px;border:1px solid var(--line,#ddd);border-radius:12px;background:#fff";
+      box.innerHTML='<div style="font-weight:700;margin-bottom:6px">🔗 رابط صفحة طلب العميل</div><input id="customerOrderUrl" style="width:100%;padding:9px;border:1px solid #ddd;border-radius:8px;direction:ltr" value="'+target.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'"><div style="display:flex;gap:8px;margin-top:8px"><button id="saveCustomerOrderUrl" class="secondary" type="button">حفظ الرابط</button><button id="openCustomerOrderPage" class="secondary" type="button">فتح الصفحة</button></div><small style="display:block;margin-top:7px;color:#777">يجب أن يكون الرابط قابلًا للوصول من موبايل العميل، وليس 127.0.0.1.</small>';
+      const code=page.querySelector(".qr-new-code");
+      if(code) code.parentElement.appendChild(box);
+      box.querySelector("#saveCustomerOrderUrl").onclick=function(){
+        const value=box.querySelector("#customerOrderUrl").value.trim();
+        if(!/^https?:\/\//i.test(value)) return alert("اكتب رابطًا يبدأ بـ http:// أو https://");
+        localStorage.setItem(KEY,value);
+        patchQR();
+        if(typeof window.toast==="function") window.toast("تم حفظ رابط صفحة الطلب وتحديث QR");
+      };
+      box.querySelector("#openCustomerOrderPage").onclick=function(){
+        window.open(box.querySelector("#customerOrderUrl").value.trim(),"_blank");
+      };
+    }
+  }
+
+  const start=()=>{
+    patchQR();
+    const root=document.getElementById("content")||document.body;
+    new MutationObserver(()=>patchQR()).observe(root,{childList:true,subtree:true});
+  };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true}); else start();
+})();
+</script><script src="/dashboard/qr-customer-link-fix.js" charset="utf-8"></script>
+<script>
+/* Login safety net: keeps login working even if a later UI module throws. */
+(function(){
+  "use strict";
+  function safeLogin(){
+    const user=(document.getElementById("loginUser")?.value||"").trim().toLowerCase();
+    const pass=document.getElementById("loginPass")?.value||"";
+    if(!user){document.getElementById("loginMsg").textContent="اكتب اسم المستخدم.";return;}
+    let db={users:[{id:1,name:"المدير",username:"admin",password:"admin",role:"مدير"}]};
+    try{
+      const raw=JSON.parse(localStorage.getItem("amircasher_db_v1")||"null");
+      if(raw&&Array.isArray(raw.users)&&raw.users.length) db.users=raw.users;
+    }catch(e){}
+    let u=db.users.find(x=>String(x.username||"").trim().toLowerCase()===user && String(x.password??"")===pass);
+    if(!u && user==="admin" && (pass==="admin"||pass==="123456")) u={id:1,name:"المدير",username:"admin",password:pass,role:"مدير"};
+    if(!u){document.getElementById("loginMsg").textContent="اسم المستخدم أو كلمة المرور غير صحيحة.";return;}
+    sessionStorage.setItem("amir_session",JSON.stringify({id:u.id,name:u.name||"المدير",role:u.role||"مدير"}));
+    document.getElementById("loginMsg").textContent="";
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    const side=document.getElementById("sideUser"); if(side) side.textContent=u.name||"المدير";
+    if(typeof window.route==="function") window.route("dashboard");
+    else if(typeof window.renderDashboard==="function") window.renderDashboard();
+  }
+  function bind(){
+    const b=document.getElementById("loginBtn"), p=document.getElementById("loginPass");
+    if(b){b.addEventListener("click",safeLogin); b.dataset.loginSafety="1";}
+    if(p)p.addEventListener("keydown",e=>{if(e.key==="Enter")safeLogin();});
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true}); else bind();
+})();
+</script>
+</body>
+</html>
