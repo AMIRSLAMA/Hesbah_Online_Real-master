@@ -133,7 +133,7 @@ function serveDashboardStatic(req,res){
   let rel=p.slice('/dashboard'.length);
   if(rel==='/'||rel==='')rel='/index.html';
   rel=decodeURIComponent(rel);
-  const allowed=rel==='/index.html'||rel==='/app.js'||rel==='/styles.css'||rel==='/qr-customer-link-fix.js'||rel.startsWith('/assets/');
+  const allowed=rel==='/index.html'||rel==='/app.js'||rel==='/styles.css'||rel==='/qr-customer-link-fix.js'||rel==='/dashboard-web.js'||rel.startsWith('/assets/');
   if(!allowed)return serveFile404(res);
   const root=path.resolve(__dirname,'..');
   const f=path.resolve(root,'.'+rel);
