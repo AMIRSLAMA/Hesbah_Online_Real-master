@@ -128,9 +128,23 @@ function body(req){return new Promise((resolve,reject)=>{let s='';req.on('data',
 function auth(req){const p=verifyToken((req.headers.authorization||'').replace(/^Bearer\s+/i,''));return p}
 function safeUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role}}
 function serveStatic(req,res){let p=url.parse(req.url).pathname;if(p==='/'||p==='')p='/index.html';const root=path.join(__dirname,'public');const f=path.normalize(path.join(root,p));if(!f.startsWith(root))return res.end('Forbidden');fs.readFile(f,(e,b)=>{if(e){if(p!=='/index.html')return serveFile404(res);return serveFile404(res)}const ext=path.extname(f);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Cache-Control':'no-cache'});res.end(b)})}
+function serveDashboardStatic(req,res){
+  let p=url.parse(req.url).pathname||'/dashboard/';
+  let rel=p.slice('/dashboard'.length);
+  if(rel==='/'||rel==='')rel='/index.html';
+  rel=decodeURIComponent(rel);
+  const allowed=rel==='/index.html'||rel==='/app.js'||rel==='/styles.css'||rel==='/qr-customer-link-fix.js'||rel.startsWith('/assets/');
+  if(!allowed)return serveFile404(res);
+  const root=path.resolve(__dirname,'..');
+  const f=path.resolve(root,'.'+rel);
+  if(f!==root && !f.startsWith(root+path.sep))return res.end('Forbidden');
+  fs.readFile(f,(e,b)=>{if(e)return serveFile404(res);const ext=path.extname(f);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Cache-Control':'no-cache'});res.end(b)});
+}
 function serveFile404(res){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end('Not found')}
 async function handle(req,res){if(req.method==='OPTIONS')return json(res,204,{});const u=url.parse(req.url,true),p=u.pathname;
 if(p==='/api/health')return json(res,200,{ok:true,service:'Hesbah Online',time:new Date().toISOString()});
+if(p==='/dashboard'||p==='/dashboard/') return serveDashboardStatic(req,res);
+if(p.startsWith('/dashboard/')) return serveDashboardStatic(req,res);
 if(!p.startsWith('/api/')) return serveStatic(req,res);
 if(p==='/api/login'&&req.method==='POST'){const b=await body(req);const sid=String(b.storeId||'demo').trim()||'demo',db=load(sid),user=db.users.find(x=>String(x.username).toLowerCase()===String(b.username||'').trim().toLowerCase());if(!user||user.passwordHash!==hash(b.password||''))return json(res,401,{ok:false,message:'بيانات الدخول غير صحيحة'});const token=sign({storeId:sid,userId:user.id,role:user.role,exp:Date.now()+7*86400000});return json(res,200,{ok:true,token,user:safeUser(user),store:{name:db.shop.name},revision:db.revision||1})}
 if(!p.startsWith('/api/'))return serveStatic(req,res);
