@@ -131,11 +131,11 @@ function serveStatic(req,res){let p=url.parse(req.url).pathname;if(p==='/'||p===
 function serveDashboardStatic(req,res){
   let p=url.parse(req.url).pathname||'/dashboard/';
   let rel=p.slice('/dashboard'.length);
-  if(rel==='/'||rel==='')rel='/index.html';
+  if(rel==='/'||rel==='')rel='/dashboard.html';
   rel=decodeURIComponent(rel);
-  const allowed=rel==='/index.html'||rel==='/app.js'||rel==='/styles.css'||rel==='/qr-customer-link-fix.js'||rel==='/dashboard-web.js'||rel.startsWith('/assets/');
+  const allowed=rel==='/dashboard.html'||rel==='/app.js'||rel==='/styles.css'||rel==='/qr-customer-link-fix.js'||rel==='/dashboard-web.js'||rel.startsWith('/assets/');
   if(!allowed)return serveFile404(res);
-  const root=path.resolve(__dirname,'..');
+  const root=path.resolve(__dirname,'public');
   const f=path.resolve(root,'.'+rel);
   if(f!==root && !f.startsWith(root+path.sep))return res.end('Forbidden');
   fs.readFile(f,(e,b)=>{if(e)return serveFile404(res);const ext=path.extname(f);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Cache-Control':'no-cache'});res.end(b)});
