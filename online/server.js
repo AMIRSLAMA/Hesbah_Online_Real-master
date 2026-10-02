@@ -1291,8 +1291,10 @@ if(p==='/api/drivers'&&req.method==='GET'){
   const driverUsers=Array.isArray(db.users)
     ? db.users.filter(u=>String(u.role||'').trim()==='مندوب توصيل')
     : [];
+  let driversChanged=false;
   for(const u of driverUsers){
-    if(!db.drivers.some(d=>Number(d.userId||0)===Number(u.id))){
+    const existing=db.drivers.find(d=>Number(d.userId||0)===Number(u.id));
+    if(!existing){
       db.drivers.push({
         id:Number(u.id),
         userId:Number(u.id),
@@ -1303,7 +1305,17 @@ if(p==='/api/drivers'&&req.method==='GET'){
         active:u.active!==false,
         createdAt:u.createdAt||new Date().toISOString()
       });
+      driversChanged=true;
+    }else{
+      existing.name=String(u.name||existing.name||'مندوب');
+      existing.username=String(u.username||existing.username||'');
+      existing.phone=String(u.phone||'');
+      existing.active=u.active!==false;
     }
+  }
+  if(driversChanged){
+    db.revision=(db.revision||1)+1;
+    save(a.storeId,db);
   }
   const busyStatuses=['accepted','preparing','ready','out_for_delivery'];
   const drivers=db.drivers.map(d=>{
@@ -1335,10 +1347,21 @@ if(p==='/api/drivers'&&req.method==='POST'){
   if(!name||!username||password.length<6) return json(res,400,{ok:false,message:'الاسم واسم المستخدم وكلمة مرور 6 أحرف على الأقل مطلوبة'});
   const db=load(a.storeId);
   if(!Array.isArray(db.drivers)) db.drivers=[];
+  const linked=db.drivers.find(d=>userId && Number(d.userId||0)===userId);
+  if(linked){
+    linked.name=name;
+    linked.username=username;
+    linked.phone=phone;
+    linked.passwordHash=hash(password);
+    linked.active=true;
+    db.revision=(db.revision||1)+1;
+    save(a.storeId,db);
+    return json(res,200,{ok:true,driver:{id:linked.id,name,username,phone,active:true}});
+  }
   if(db.drivers.some(d=>String(d.username||'').toLowerCase()===username.toLowerCase())){
     return json(res,409,{ok:false,message:'اسم مستخدم المندوب مستخدم بالفعل'});
   }
-  const driver={id:Date.now(),userId:userId||null,name,username,phone,passwordHash:hash(password),active:true,createdAt:new Date().toISOString()};
+  const driver={id:userId||Date.now(),userId:userId||null,name,username,phone,passwordHash:hash(password),active:true,createdAt:new Date().toISOString()};
   db.drivers.push(driver);
   db.revision=(db.revision||1)+1;
   save(a.storeId,db);
