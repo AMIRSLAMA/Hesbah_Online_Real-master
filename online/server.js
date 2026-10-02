@@ -1331,13 +1331,14 @@ if(p==='/api/drivers'&&req.method==='POST'){
   const username=String(b.username||'').trim();
   const password=String(b.password||'');
   const phone=String(b.phone||'').trim();
+  const userId=Number(b.userId||0);
   if(!name||!username||password.length<6) return json(res,400,{ok:false,message:'الاسم واسم المستخدم وكلمة مرور 6 أحرف على الأقل مطلوبة'});
   const db=load(a.storeId);
   if(!Array.isArray(db.drivers)) db.drivers=[];
   if(db.drivers.some(d=>String(d.username||'').toLowerCase()===username.toLowerCase())){
     return json(res,409,{ok:false,message:'اسم مستخدم المندوب مستخدم بالفعل'});
   }
-  const driver={id:Date.now(),name,username,phone,passwordHash:hash(password),active:true,createdAt:new Date().toISOString()};
+  const driver={id:Date.now(),userId:userId||null,name,username,phone,passwordHash:hash(password),active:true,createdAt:new Date().toISOString()};
   db.drivers.push(driver);
   db.revision=(db.revision||1)+1;
   save(a.storeId,db);
