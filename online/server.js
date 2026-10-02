@@ -1285,8 +1285,28 @@ if(p==='/api/drivers'&&req.method==='GET'){
   if(!a) return json(res,401,{ok:false,message:'غير مصرح'});
   const db=load(a.storeId);
   const orders=Array.isArray(db.orders)?db.orders:[];
+  // Keep delivery representatives created from Users & Permissions visible here.
+  // Older data may have the role "مندوب توصيل" in users but no matching db.drivers record.
+  if(!Array.isArray(db.drivers)) db.drivers=[];
+  const driverUsers=Array.isArray(db.users)
+    ? db.users.filter(u=>String(u.role||'').trim()==='مندوب توصيل')
+    : [];
+  for(const u of driverUsers){
+    if(!db.drivers.some(d=>Number(d.userId||0)===Number(u.id))){
+      db.drivers.push({
+        id:Number(u.id),
+        userId:Number(u.id),
+        name:String(u.name||'مندوب'),
+        username:String(u.username||''),
+        phone:String(u.phone||''),
+        passwordHash:String(u.passwordHash||''),
+        active:u.active!==false,
+        createdAt:u.createdAt||new Date().toISOString()
+      });
+    }
+  }
   const busyStatuses=['accepted','preparing','ready','out_for_delivery'];
-  const drivers=Array.isArray(db.drivers)?db.drivers.map(d=>{
+  const drivers=db.drivers.map(d=>{
     const activeOrder=orders.find(o=>Number(o.driverId)===Number(d.id)&&busyStatuses.includes(String(o.status||'')));
     return {
       id:d.id,
@@ -1332,6 +1352,23 @@ if(p==='/api/orders/assign-driver'&&req.method==='PUT'){
   const orderId=Number(b.orderId||0);
   const driverId=Number(b.driverId||0);
   const db=load(a.storeId);
+  // Migrate a delivery user into the driver table on first assignment.
+  if(!Array.isArray(db.drivers)) db.drivers=[];
+  const userDriver=Array.isArray(db.users)
+    ? db.users.find(u=>Number(u.id)===driverId && String(u.role||'').trim()==='مندوب توصيل')
+    : null;
+  if(userDriver && !db.drivers.some(d=>Number(d.id)===driverId)){
+    db.drivers.push({
+      id:Number(userDriver.id),
+      userId:Number(userDriver.id),
+      name:String(userDriver.name||'مندوب'),
+      username:String(userDriver.username||''),
+      phone:String(userDriver.phone||''),
+      passwordHash:String(userDriver.passwordHash||''),
+      active:userDriver.active!==false,
+      createdAt:userDriver.createdAt||new Date().toISOString()
+    });
+  }
   const order=(db.orders||[]).find(x=>Number(x.id)===orderId);
   if(!order) return json(res,404,{ok:false,message:'الطلب غير موجود'});
   if(order.type!=='delivery') return json(res,400,{ok:false,message:'تعيين مندوب متاح لطلبات التوصيل فقط'});
