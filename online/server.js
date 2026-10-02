@@ -1284,7 +1284,22 @@ if(p==='/api/drivers'&&req.method==='GET'){
   const a=auth(req);
   if(!a) return json(res,401,{ok:false,message:'غير مصرح'});
   const db=load(a.storeId);
-  const drivers=Array.isArray(db.drivers)?db.drivers.map(d=>({id:d.id,name:d.name,phone:d.phone||'',username:d.username,active:d.active!==false})):[]; 
+  const orders=Array.isArray(db.orders)?db.orders:[];
+  const busyStatuses=['accepted','preparing','ready','out_for_delivery'];
+  const drivers=Array.isArray(db.drivers)?db.drivers.map(d=>{
+    const activeOrder=orders.find(o=>Number(o.driverId)===Number(d.id)&&busyStatuses.includes(String(o.status||'')));
+    return {
+      id:d.id,
+      name:d.name,
+      phone:d.phone||'',
+      username:d.username,
+      active:d.active!==false,
+      busy:Boolean(activeOrder),
+      status:d.active===false?'inactive':(activeOrder?'busy':'available'),
+      currentOrderId:activeOrder?Number(activeOrder.id):null,
+      currentOrderNumber:activeOrder?String(activeOrder.number||activeOrder.id):''
+    };
+  }):[];
   return json(res,200,{ok:true,drivers});
 }
 
@@ -1312,6 +1327,7 @@ if(p==='/api/drivers'&&req.method==='POST'){
 if(p==='/api/orders/assign-driver'&&req.method==='PUT'){
   const a=auth(req);
   if(!a) return json(res,401,{ok:false,message:'غير مصرح'});
+  if(!['مدير','بائع'].includes(a.role)) return json(res,403,{ok:false,message:'تعيين المندوب للمدير والبائع فقط'});
   const b=await body(req);
   const orderId=Number(b.orderId||0);
   const driverId=Number(b.driverId||0);
@@ -1324,6 +1340,9 @@ if(p==='/api/orders/assign-driver'&&req.method==='PUT'){
   }else{
     const driver=(db.drivers||[]).find(x=>Number(x.id)===driverId&&x.active!==false);
     if(!driver) return json(res,404,{ok:false,message:'المندوب غير موجود أو غير مفعل'});
+    const busyStatuses=['accepted','preparing','ready','out_for_delivery'];
+    const busyOrder=(db.orders||[]).find(x=>Number(x.driverId)===Number(driver.id)&&Number(x.id)!==Number(order.id)&&busyStatuses.includes(String(x.status||'')));
+    if(busyOrder) return json(res,409,{ok:false,message:'المندوب مشغول حاليًا بطلب آخر',busyOrderId:busyOrder.id,busyOrderNumber:busyOrder.number});
     order.driverId=driver.id;
     order.driverName=driver.name;
     order.driverPhone=driver.phone||'';
