@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const KEY = "amircasher_db_v1";
@@ -9,6 +9,15 @@ const defaults = {
   owner:{name:"المهندس امير سلامه خلف الله",phone:"01284321280"},
   printer:{copies:1,drawer:false,printer:"النظام الافتراضي",prep:false},
   activation:{status:"تجريبي",code:"",customer:""},
+  paymentSettings:{
+    cash:{enabled:true,name:"دفع كاش عند الاستلام"},
+    vodafoneCash:{enabled:false,name:"Vodafone Cash",number:""},
+    etisalatCash:{enabled:false,name:"Etisalat Cash",number:""},
+    orangeCash:{enabled:false,name:"Orange Cash",number:""},
+    wePay:{enabled:false,name:"WE Pay",number:""},
+    instapay:{enabled:false,name:"InstaPay",account:""},
+    card:{enabled:false,name:"Visa / Mastercard",provider:"",publicKey:""}
+  },
   qrMenu:{showLogo:true,showName:true,layout:"all"},
   categories:["عام"],
   users:[{id:1,name:"المدير",username:"admin",password:"admin",role:"مدير"}],
@@ -74,12 +83,34 @@ function currentUser(){try{return JSON.parse(sessionStorage.getItem("amir_sessio
 function isManager(){return currentUser().role==="مدير"}
 function denySeller(){toast("هذه العملية متاحة للمدير فقط");return false}
 
+function repairUserText(value){
+  const str=String(value??"");
+  if(!/[ØÙ]/.test(str))return str;
+  try{
+    const bytes=new Uint8Array([...str].map(ch=>ch.charCodeAt(0)&255));
+    const fixed=new TextDecoder("utf-8",{fatal:true}).decode(bytes);
+    return fixed||str;
+  }catch{return str}
+}
+function normalizeUserRecord(u){
+  const x={...(u||{})};
+  x.name=repairUserText(x.name);
+  x.role=repairUserText(x.role);
+  if(x.role==="مدير"||x.role==="بائع"||x.role==="مندوب توصيل")return x;
+  if(/مدير|manager/i.test(x.role))x.role="مدير";
+  else if(/بائع|seller/i.test(x.role))x.role="بائع";
+  else if(/مندوب|driver/i.test(x.role))x.role="مندوب توصيل";
+  else x.role="بائع";
+  return x;
+}
+
 function ensureDatabase(){
   let changed=false;
   if(!db || typeof db !== "object") { db=structuredClone(defaults); changed=true; }
   if(!Array.isArray(db.users) || !db.users.length){
     db.users=structuredClone(defaults.users); changed=true;
   }
+  db.users=db.users.map(normalizeUserRecord);
   // Guarantee the built-in administrator exists so a fresh install always has a working login.
   if(!db.users.some(x => String(x.username||"").trim().toLowerCase()==="admin")){
     db.users.unshift({id:1,name:"المدير",username:"admin",password:"admin",role:"مدير"}); changed=true;
@@ -109,7 +140,7 @@ $("#logoutBtn").onclick=()=>{sessionStorage.removeItem("amir_session");location.
 $("#themeBtn").onclick=()=>{db.theme=db.theme==="dark"?"light":"dark";document.body.classList.toggle("dark",db.theme==="dark");save()};
 document.body.classList.toggle("dark",db.theme==="dark");
 
-const titles={dashboard:["لوحة التحكم","ملخص الكاشير والطلبات الأونلاين"],pos:["نقطة البيع","بيع سريع وإدارة المبيعات"],products:["المنتجات والمخزون","إضافة الأصناف والأسعار والكميات"],invoices:["الفواتير","مراجعة وطباعة الفواتير"],returns:["المرتجعات","إرجاع الأصناف وتسجيل حركة المرتجع"],customers:["العملاء","بيانات العملاء وحساباتهم"],suppliers:["الموردون والمشتريات","إدارة الموردين والمشتريات"],reports:["التقارير","ملخص المبيعات والأرباح"],expenses:["المصروفات","تسجيل ومتابعة المصروفات"],shifts:["الشيفتات","فتح وإغلاق الشيفت"],users:["المستخدمون","حسابات البائعين والصلاحيات"],qrmenu:["قائمة الأسعار QR","QR شامل كل الأصناف والأسعار"],settings:["الإعدادات","بيانات المحل والطباعة والنسخ الاحتياطي والتفعيل"]};
+const titles={dashboard:["لوحة التحكم","ملخص الكاشير والطلبات الأونلاين"],pos:["نقطة البيع","بيع سريع وإدارة المبيعات"],products:["المنتجات والمخزون","إضافة الأصناف والأسعار والكميات"],invoices:["الفواتير","مراجعة وطباعة الفواتير"],returns:["المرتجعات","إرجاع الأصناف وتسجيل حركة المرتجع"],customers:["العملاء","بيانات العملاء وحساباتهم"],suppliers:["الموردون والمشتريات","إدارة الموردين والمشتريات"],reports:["التقارير","ملخص المبيعات والأرباح"],expenses:["المصروفات","تسجيل ومتابعة المصروفات"],shifts:["الشيفتات","فتح وإغلاق الشيفت"],users:["المستخدمون","حسابات البائعين والصلاحيات"],qrmenu:["قائمة الأسعار QR","QR شامل كل الأصناف والأسعار"],onlineorders:["الطلبات الأونلاين","متابعة وإدارة طلبات العملاء"],settings:["الإعدادات","بيانات المحل والطباعة والنسخ الاحتياطي وطرق الدفع والتفعيل"]};
 
 
 function renderDashboard(){
@@ -122,7 +153,7 @@ function renderDashboard(){
     '<div class="card dashboard-kpi"><span class="muted">فواتير اليوم</span><div class="stat-num">'+inv.length+'</div></div>'+
     '<div class="card dashboard-kpi"><span class="muted">أصناف منخفضة</span><div class="stat-num">'+low+'</div></div>'+
     '<div class="card dashboard-kpi"><span class="muted">العملاء</span><div class="stat-num">'+db.customers.length+'</div></div></div>'+
-    '<div class="card" style="margin-top:18px"><div class="page-head"><div><h2>الطلبات الأونلاين</h2><p>ملخص مباشر من السيرفر</p></div><button class="secondary" onclick="route(\\'onlineorders\\')">فتح الطلبات</button></div><div id="dashboardOnlineSummary" class="muted">جاري التحميل...</div></div>';
+    '<div class="card" style="margin-top:18px"><div class="page-head"><div><h2>الطلبات الأونلاين</h2><p>ملخص مباشر من السيرفر</p></div><button class="secondary" onclick="route(\'onlineorders\')">فتح الطلبات</button></div><div id="dashboardOnlineSummary" class="muted">جاري التحميل...</div></div>';
   if(!db.online||!db.online.url){$("#dashboardOnlineSummary").textContent="اربط Hesbah Online من الإعدادات أولًا.";return}
   getOnlineOrdersForDashboard().then(function(orders){
     $("#dashboardOnlineSummary").innerHTML='<div class="grid g3"><div><b>'+orders.length+'</b><div class="muted">إجمالي الطلبات</div></div><div><b>'+orders.filter(function(o){return o.status==="new"}).length+'</b><div class="muted">طلبات جديدة</div></div><div><b>'+orders.filter(function(o){return o.status==="out_for_delivery"}).length+'</b><div class="muted">خرجت للتوصيل</div></div></div>';
@@ -134,7 +165,7 @@ async function getOnlineOrdersForDashboard(){
 }
 function renderOnlineOrders(){
   if(!db.online||!db.online.url){$("#content").innerHTML='<div class="card"><h2>الطلبات الأونلاين</h2><p>اربط Hesbah Online من الإعدادات أولًا.</p></div>';return}
-  $("#content").innerHTML='<div class="page-head"><div><h1>الطلبات الأونلاين</h1><p>متابعة حالة طلبات العملاء.</p></div><button class="secondary" onclick="route(\\'dashboard\\')">لوحة التحكم</button></div><div class="card" id="onlineOrdersBox">جاري التحميل...</div>';
+  $("#content").innerHTML='<div class="page-head"><div><h1>الطلبات الأونلاين</h1><p>متابعة حالة طلبات العملاء.</p></div><button class="secondary" onclick="route(\'dashboard\')">لوحة التحكم</button></div><div class="card" id="onlineOrdersBox">جاري التحميل...</div>';
   getOnlineOrdersForDashboard().then(function(orders){
     if(!orders.length){$("#onlineOrdersBox").innerHTML='<p class="muted">لا توجد طلبات حتى الآن.</p>';return}
     var rows=orders.map(function(o){
@@ -156,7 +187,7 @@ function route(page){
    console.error("Hesbah: invalid route",page);
    return toast("تعذر فتح الصفحة المطلوبة");
  }
- $("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
+ document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
  $("#pageTitle").textContent=titles[page][0];
  $("#pageSub").textContent=titles[page][1];
  try{
@@ -168,7 +199,7 @@ function route(page){
  }
 }
 window.route=route;
-$("#nav").onclick=e=>{const b=e.target.closest("button[data-page]");if(!b)return;const sellerPages=["pos","products","invoices","customers","qrmenu"];if(currentUser().role==="بائع"&&!sellerPages.includes(b.dataset.page))return denySeller();route(b.dataset.page)};
+$("#nav").onclick=e=>{const b=e.target.closest("button[data-page]");if(!b)return;const role=currentUser().role;const sellerPages=["pos","products","invoices","customers","qrmenu"];const driverPages=["dashboard","onlineorders"];if(role==="بائع"&&!sellerPages.includes(b.dataset.page))return denySeller();if(role==="مندوب توصيل"&&!driverPages.includes(b.dataset.page))return denySeller();route(b.dataset.page)};
 
 function renderPOS(){
  const today=db.invoices.filter(i=>i.date.slice(0,10)===new Date().toISOString().slice(0,10));
@@ -297,9 +328,14 @@ window.openShift=()=>{
 }
 window.closeShift=()=>{if(!db.currentShift)return toast("لا يوجد شيفت مفتوح");const s=db.currentShift;s.end=new Date().toISOString();s.sales=db.invoices.filter(i=>new Date(i.date)>=new Date(s.start)).reduce((a,b)=>a+b.total,0);db.shifts.unshift(s);db.currentShift=null;save();route("shifts");toast("تم إغلاق الشيفت")};
 
-function renderUsers(){const me=JSON.parse(sessionStorage.getItem("amir_session")||"{}");$("#content").innerHTML=`<div class="page-head"><div><h1>المستخدمون</h1><p>إدارة حسابات البائعين وكلمات المرور — تحت إدارة المدير</p></div><button class="primary" onclick="userForm()">+ إضافة بائع</button></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>الصلاحية</th><th>إجراء</th></tr></thead><tbody>${db.users.map(u=>`<tr><td>${escape(u.name)}</td><td>${escape(u.username)}</td><td>${escape(u.role)}</td><td class="actions"><button class="secondary" onclick="passwordForm(${u.id})">تعديل الباسورد</button>${u.username!=="admin"?`<button class="danger" onclick="deleteUser(${u.id})">حذف</button>`:""}</td></tr>`).join("")}</tbody></table></div></div>`}
-window.userForm=()=>{if(!isManager())return denySeller();openModal(`<div class="modal-head"><h2>إضافة بائع</h2><button class="close" onclick="closeModal()">×</button></div><div class="grid g2"><label>اسم البائع<input id="uName"></label><label>اسم المستخدم<input id="uUser"></label><label>كلمة المرور<input id="uPass" type="password"></label><label>الصلاحية<select id="uRole"><option>بائع</option><option>مدير</option></select></label></div><div class="form-actions"><button class="primary" onclick="saveUser()">حفظ</button><button class="secondary" type="button" onclick="closeModal()">إلغاء</button></div>`)}
-window.saveUser=()=>{if(!isManager())return denySeller();const u={id:Date.now(),name:$("#uName").value.trim(),username:$("#uUser").value.trim(),password:$("#uPass").value,role:$("#uRole").value};if(!u.name||!u.username||!u.password)return toast("أكمل البيانات");if(db.users.some(x=>x.username===u.username))return toast("اسم المستخدم موجود");db.users.push(u);save();closeModal();renderUsers();toast("تم إضافة البائع")};
+function renderUsers(){
+  $("#content").innerHTML=`<div class="page-head"><div><h1>المستخدمون والصلاحيات</h1><p>إدارة حسابات المدير والبائع ومندوب التوصيل والصلاحيات.</p></div><button class="primary" onclick="userForm()">+ إضافة مستخدم</button></div>
+  <div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>رقم الهاتف</th><th>الصلاحية</th><th>إجراء</th></tr></thead><tbody>
+  ${db.users.map(u=>`<tr><td>${escape(u.name)}</td><td>${escape(u.username)}</td><td>${escape(u.phone||"-")}</td><td><b>${escape(u.role||"بائع")}</b></td><td class="actions"><button class="secondary" onclick="passwordForm(${u.id})">تغيير كلمة المرور</button>${u.username!=="admin"?`<button class="danger" onclick="deleteUser(${u.id})">حذف</button>`:""}</td></tr>`).join("")}
+  </tbody></table></div></div>`;
+}
+window.userForm=()=>{if(!isManager())return denySeller();openModal(`<div class="modal-head"><h2>إضافة مستخدم</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="grid g2"><label>الاسم<input id="uName"></label><label>اسم المستخدم<input id="uUser"></label><label>كلمة المرور<input id="uPass" type="password"></label><label>رقم الهاتف<input id="uPhone"></label><label>الصلاحية<select id="uRole"><option value="بائع">بائع</option><option value="مندوب توصيل">مندوب توصيل</option><option value="مدير">مدير</option></select></label></div><p class="muted">مندوب التوصيل له حساب مستقل بصلاحية "مندوب توصيل".</p><div class="form-actions"><button class="primary" onclick="saveUser()">حفظ</button><button class="secondary" type="button" onclick="closeModal()">إلغاء</button></div>`)}
+window.saveUser=()=>{if(!isManager())return denySeller();const u={id:Date.now(),name:$("#uName").value.trim(),username:$("#uUser").value.trim(),password:$("#uPass").value,phone:$("#uPhone").value.trim(),role:$("#uRole").value};if(!u.name||!u.username||!u.password)return toast("أكمل البيانات");if(db.users.some(x=>String(x.username).toLowerCase()===u.username.toLowerCase()))return toast("اسم المستخدم موجود بالفعل");db.users.push(u);save();closeModal();renderUsers();toast(u.role==="مندوب توصيل"?"تم إضافة مندوب التوصيل":"تم إضافة المستخدم")};
 window.deleteUser=id=>{if(!isManager())return denySeller();const u=db.users.find(x=>x.id===id);if(!u||u.username==="admin")return;if(!confirm("حذف البائع؟"))return;db.users=db.users.filter(x=>x.id!==id);save();renderUsers()};
 window.passwordForm=id=>{if(!isManager())return denySeller();const u=db.users.find(x=>x.id===id);if(!u)return;openModal(`<div class="modal-head"><h2>تعديل كلمة المرور</h2><button class="close" type="button" onclick="closeModal()">×</button></div><label>كلمة المرور الجديدة<input id="newPass" type="password"></label><div class="form-actions"><button class="primary" onclick="savePassword()">حفظ</button><button class="secondary" type="button" onclick="closeModal()">إلغاء</button></div>`);window._passwordUserId=id};
 window.savePassword=()=>{if(!isManager())return denySeller();const u=db.users.find(x=>x.id===window._passwordUserId);if(!u)return;const pass=$("#newPass").value;if(!pass)return toast("اكتب كلمة مرور");u.password=pass;save();closeModal();toast("تم تغيير كلمة المرور")};
@@ -388,7 +424,7 @@ window.printQRMenu=async()=>{
 };
 function renderSettings(){
  $("#content").innerHTML=`<div class="page-head"><div><h1>الإعدادات</h1><p>إدارة بيانات المحل والطباعة والنسخ الاحتياطي والتفعيل</p></div></div>
- <div class="tabs" id="settingsTabs"><button class="tab active" data-tab="shop">بيانات المحل</button><button class="tab" data-tab="printer">الطباعة ودرج النقدية</button><button class="tab" data-tab="backup">النسخ الاحتياطي</button><button class="tab" data-tab="online">Hesbah Online</button><button class="tab" data-tab="activation">التفعيل</button></div><div id="settingsPanel"></div>`;
+ <div class="tabs" id="settingsTabs"><button class="tab active" data-tab="shop">بيانات المحل</button><button class="tab" data-tab="printer">الطباعة ودرج النقدية</button><button class="tab" data-tab="backup">النسخ الاحتياطي</button><button class="tab" data-tab="online">Hesbah Online</button><button class="tab" data-tab="payment">💳 طرق الدفع</button><button class="tab" data-tab="activation">التفعيل</button></div><div id="settingsPanel"></div>`;
  $("#settingsTabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(!b)return;$$(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");settingsPanel(b.dataset.tab)};
  settingsPanel("shop");
 }
@@ -398,8 +434,97 @@ function settingsPanel(tab){
  if(tab==="printer")p.innerHTML=`<div class="card"><h2>الطباعة ودرج النقدية</h2><div class="grid g2"><label>الطابعة<input id="printerName" value="${escape(db.printer.printer)}"></label><label>عدد نسخ الفاتورة<select id="copies"><option ${db.printer.copies===1?"selected":""}>1</option><option ${db.printer.copies===2?"selected":""}>2</option><option ${db.printer.copies===3?"selected":""}>3</option></select></label></div><label>فتح درج النقدية مع الطباعة <select id="drawer"><option value="0" ${!db.printer.drawer?"selected":""}>لا</option><option value="1" ${db.printer.drawer?"selected":""}>نعم</option></select></label><label>طباعة تذكرة تجهيز الطلب <select id="prep"><option value="0" ${!db.printer.prep?"selected":""}>لا</option><option value="1" ${db.printer.prep?"selected":""}>نعم</option></select></label><p class="muted">بعد الضغط على طباعة ستظهر نافذة طباعة Windows لاختيار الطابعة. دعم درج النقدية الحقيقي يعتمد على تعريف ESC/POS الخاص بالطابعة.</p><div class="form-actions"><button class="primary" onclick="savePrinter()">حفظ إعدادات الطباعة</button></div></div>`;
  if(tab==="backup")p.innerHTML=`<div class="card"><h2>النسخ الاحتياطي</h2><p class="muted">احفظ نسخة كاملة من المنتجات والفواتير والعملاء والمستخدمين والإعدادات على جهازك.</p><div class="actions"><button class="primary" onclick="backup()">إنشاء نسخة احتياطية</button><button class="secondary" onclick="restore()">استرجاع نسخة احتياطية</button></div><hr style="border:0;border-top:1px solid var(--line);margin:22px 0"><p><b>نصيحة:</b> احتفظ بنسخة على فلاشة أو قرص خارجي.</p></div>`;
  if(tab==="online")p.innerHTML=`<div class="card"><h2>Hesbah Online</h2><p class="muted">اربط برنامج الكاشير بحساب Hesbah Online لمزامنة البيانات بين الأجهزة.</p><div class="grid g2"><label>عنوان السيرفر<input id="onlineUrl" value="${escape(db.online?.url||"")}" placeholder="مثال: http://192.168.1.10:8080"></label><label>كود المتجر<input id="onlineStoreId" value="${escape(db.online?.storeId||"demo")}" placeholder="demo"></label></div><label>المزامنة التلقائية <select id="onlineAuto"><option value="0" ${!db.online?.autoSync?"selected":""}>لا</option><option value="1" ${db.online?.autoSync?"selected":""}>نعم</option></select></label><div class="form-actions"><button class="primary" onclick="saveOnlineSettings()">حفظ الإعدادات</button><button class="secondary" onclick="connectOnlineNow()">اختبار الاتصال والربط</button><button class="secondary" onclick="syncOnline(true)">مزامنة الآن</button></div><div id="onlineStatus" class="muted" style="margin-top:14px"></div></div>`;
+ if(tab==="payment")p.innerHTML=`<div class="card"><h2>💳 طرق الدفع</h2><p class="muted">حدد طرق الدفع التي تظهر للعميل في صفحة الطلب. يمكنك تشغيل أو إيقاف أي طريقة وتسجيل بياناتها.</p><div class="grid g2">
+ <div><label><input type="checkbox" id="posPayCashEnabled"> 💵 كاش عند الاستلام</label><input id="posPayCashName" placeholder="اسم طريقة الدفع"></div>
+ <div><label><input type="checkbox" id="posPayVodafoneEnabled"> 📱 Vodafone Cash</label><input id="posPayVodafoneName" placeholder="اسم طريقة الدفع"><input id="posPayVodafoneNumber" placeholder="رقم Vodafone Cash"></div>
+ <div><label><input type="checkbox" id="posPayEtisalatEnabled"> 📱 Etisalat Cash</label><input id="posPayEtisalatName" placeholder="اسم طريقة الدفع"><input id="posPayEtisalatNumber" placeholder="رقم Etisalat Cash"></div>
+ <div><label><input type="checkbox" id="posPayOrangeEnabled"> 📱 Orange Cash</label><input id="posPayOrangeName" placeholder="اسم طريقة الدفع"><input id="posPayOrangeNumber" placeholder="رقم Orange Cash"></div>
+ <div><label><input type="checkbox" id="posPayWeEnabled"> 📱 WE Pay</label><input id="posPayWeName" placeholder="اسم طريقة الدفع"><input id="posPayWeNumber" placeholder="رقم WE Pay"></div>
+ <div><label><input type="checkbox" id="posPayInstapayEnabled"> 🏦 InstaPay</label><input id="posPayInstapayName" placeholder="اسم طريقة الدفع"><input id="posPayInstapayAccount" placeholder="حساب / عنوان InstaPay"></div>
+ <div><label><input type="checkbox" id="posPayCardEnabled"> 💳 Visa / Mastercard</label><input id="posPayCardName" placeholder="اسم طريقة الدفع"><input id="posPayCardProvider" placeholder="مزود خدمة الدفع"><input id="posPayCardPublicKey" placeholder="Public Key"></div>
+ </div><div class="form-actions"><button class="primary" onclick="savePaymentSettingsPOS()">💾 حفظ إعدادات الدفع</button><button class="secondary" onclick="loadPaymentSettingsPOS()">🔄 تحديث</button></div><div id="posPaymentMsg" class="muted" style="margin-top:12px"></div></div>`;
+ loadPaymentSettingsPOS();
  if(tab==="activation")p.innerHTML=`<div class="card"><h2>تفعيل البرنامج</h2><div class="grid g2"><label>حالة البرنامج<input id="actStatus" value="جاري التحقق..." disabled></label><label>Machine ID<input id="machineId" value="جاري القراءة..." disabled></label><label>كود التفعيل<input id="actCode" value="${escape(db.activation.code)}" placeholder="الصق كود التفعيل هنا"></label><label>اسم العميل<input id="actCustomer" value="${escape(db.activation.customer)}" disabled></label></div><div id="trialInfo" class="muted" style="margin-top:12px"></div><div class="form-actions"><button class="primary" onclick="saveActivation()">تفعيل البرنامج</button></div><p class="muted">أرسل الـ Machine ID للإدارة ليتم إصدار كود خاص بهذا الجهاز.</p></div>`; refreshLicense().then(st=>{if($("#machineId"))$("#machineId").value=st.machineId||"-"; if($("#actStatus"))$("#actStatus").value=st.status+(st.trial&&st.daysLeft!=null?` — متبقي ${st.daysLeft} يوم`:""); if($("#actCustomer"))$("#actCustomer").value=st.customer||db.activation.customer||""; if($("#trialInfo"))$("#trialInfo").textContent=st.trial?`الفترة التجريبية: 15 يوم — المتبقي ${st.daysLeft} يوم — تنتهي في ${new Date(st.expiresAt).toLocaleDateString("ar-EG")}`:(st.expiresAt?`التفعيل ساري حتى ${new Date(st.expiresAt).toLocaleDateString("ar-EG")}`:"")});
 }
+async function loadPaymentSettingsPOS(){
+  const msg=$("#posPaymentMsg");
+  let p=structuredClone(defaults.paymentSettings);
+  try{
+    if(db.paymentSettings) p={...p,...db.paymentSettings};
+    if(db.online?.url){
+      try{
+        const d=await onlineFetch("/api/public/payment-methods");
+        if(d?.payment) p=d.payment;
+      }catch(_){}
+    }
+
+    $("#posPayCashEnabled").checked=!!p.cash?.enabled;
+    $("#posPayCashName").value=p.cash?.name||"دفع كاش عند الاستلام";
+
+    $("#posPayVodafoneEnabled").checked=!!p.vodafoneCash?.enabled;
+    $("#posPayVodafoneName").value=p.vodafoneCash?.name||"Vodafone Cash";
+    $("#posPayVodafoneNumber").value=p.vodafoneCash?.number||"";
+
+    $("#posPayEtisalatEnabled").checked=!!p.etisalatCash?.enabled;
+    $("#posPayEtisalatName").value=p.etisalatCash?.name||"Etisalat Cash";
+    $("#posPayEtisalatNumber").value=p.etisalatCash?.number||"";
+
+    $("#posPayOrangeEnabled").checked=!!p.orangeCash?.enabled;
+    $("#posPayOrangeName").value=p.orangeCash?.name||"Orange Cash";
+    $("#posPayOrangeNumber").value=p.orangeCash?.number||"";
+
+    $("#posPayWeEnabled").checked=!!p.wePay?.enabled;
+    $("#posPayWeName").value=p.wePay?.name||"WE Pay";
+    $("#posPayWeNumber").value=p.wePay?.number||"";
+
+    $("#posPayInstapayEnabled").checked=!!p.instapay?.enabled;
+    $("#posPayInstapayName").value=p.instapay?.name||"InstaPay";
+    $("#posPayInstapayAccount").value=p.instapay?.account||"";
+
+    $("#posPayCardEnabled").checked=!!p.card?.enabled;
+    $("#posPayCardName").value=p.card?.name||"Visa / Mastercard";
+    $("#posPayCardProvider").value=p.card?.provider||"";
+    $("#posPayCardPublicKey").value=p.card?.publicKey||"";
+
+    db.paymentSettings=p;
+    if(msg)msg.textContent="✓ تم تحميل إعدادات الدفع";
+  }catch(e){
+    if(msg)msg.textContent="❌ "+(e.message||"تعذر تحميل إعدادات الدفع");
+  }
+}
+
+async function savePaymentSettingsPOS(){
+  if(!isManager())return denySeller();
+  const msg=$("#posPaymentMsg");
+  const payload={
+    cash:{enabled:$("#posPayCashEnabled").checked,name:$("#posPayCashName").value.trim()},
+    vodafoneCash:{enabled:$("#posPayVodafoneEnabled").checked,name:$("#posPayVodafoneName").value.trim(),number:$("#posPayVodafoneNumber").value.trim()},
+    etisalatCash:{enabled:$("#posPayEtisalatEnabled").checked,name:$("#posPayEtisalatName").value.trim(),number:$("#posPayEtisalatNumber").value.trim()},
+    orangeCash:{enabled:$("#posPayOrangeEnabled").checked,name:$("#posPayOrangeName").value.trim(),number:$("#posPayOrangeNumber").value.trim()},
+    wePay:{enabled:$("#posPayWeEnabled").checked,name:$("#posPayWeName").value.trim(),number:$("#posPayWeNumber").value.trim()},
+    instapay:{enabled:$("#posPayInstapayEnabled").checked,name:$("#posPayInstapayName").value.trim(),account:$("#posPayInstapayAccount").value.trim()},
+    card:{enabled:$("#posPayCardEnabled").checked,name:$("#posPayCardName").value.trim(),provider:$("#posPayCardProvider").value.trim(),publicKey:$("#posPayCardPublicKey").value.trim()}
+  };
+
+  try{
+    db.paymentSettings=payload;
+    save();
+    if(msg)msg.textContent="جاري الحفظ...";
+    if(db.online?.url){
+      await onlineFetch("/api/payment-settings",{
+        method:"PUT",
+        body:JSON.stringify(payload)
+      });
+      if(msg)msg.textContent="✅ تم الحفظ ومزامنة طرق الدفع مع Hesbah Online";
+    }else{
+      if(msg)msg.textContent="✅ تم الحفظ محليًا. اربط Hesbah Online ليظهر التغيير للعميل.";
+    }
+    toast("تم حفظ إعدادات الدفع");
+  }catch(e){
+    if(msg)msg.textContent="❌ "+(e.message||"تعذر حفظ إعدادات الدفع");
+  }
+}
+
 window.saveOnlineSettings=()=>{if(!isManager())return denySeller();db.online=db.online||{};db.online.url=$("#onlineUrl").value.trim().replace(/\/$/,"");db.online.storeId=$("#onlineStoreId").value.trim()||"demo";db.online.autoSync=$("#onlineAuto").value==="1";db.online.enabled=!!db.online.url;save();settingsPanel("online");toast(db.online.enabled?"تم حفظ إعدادات Hesbah Online":"تم حفظ الإعدادات")};
 window.connectOnlineNow=async()=>{if(!isManager())return denySeller();db.online=db.online||{};db.online.url=$("#onlineUrl").value.trim().replace(/\/$/,"");db.online.storeId=$("#onlineStoreId").value.trim()||"demo";db.online.autoSync=$("#onlineAuto").value==="1";db.online.enabled=!!db.online.url;save();if(!db.online.url)return toast("أدخل عنوان السيرفر أولًا");const st=$("#onlineStatus");if(st)st.textContent="جاري الاتصال...";try{const d=await onlineFetch("/api/login",{method:"POST",body:JSON.stringify({storeId:db.online.storeId,username:"admin",password:"admin"})});localStorage.setItem("hesbah_online_token",d.token);if(st)st.textContent=`✓ تم الاتصال بالسيرفر — المتجر: ${d.store?.name||db.online.storeId}`;await syncOnline(true)}catch(e){if(st)st.textContent="✗ تعذر الاتصال: "+e.message;toast("تعذر الاتصال: "+e.message)}};
 
@@ -416,3 +541,9 @@ refreshBrandLogo();
 if(db.online?.enabled && db.online.url) setTimeout(()=>syncOnline(false),1500);
 if(sessionStorage.getItem("amir_session")){const s=JSON.parse(sessionStorage.getItem("amir_session"));$("#loginScreen").classList.add("hidden");$("#app").classList.remove("hidden");$("#sideUser").textContent=s.name;route("pos");checkLicense()}
 })();
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto'),url=require('url');
+﻿const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto'),url=require('url');
 const PORT=Number(process.env.PORT||8080), HOST=process.env.HOST||'0.0.0.0';
 const DATA=path.join(__dirname,'data'); fs.mkdirSync(DATA,{recursive:true});
 const SECRET=process.env.HESBAH_SECRET||'CHANGE_THIS_SECRET_BEFORE_PRODUCTION';
@@ -35,7 +35,7 @@ const DEMO={
       name:'المدير',
       username:'admin',
       passwordHash:hash('admin'),
-      role:'Ù…Ø¯ÙŠØ±'
+      role:'مدير'
     }
   ],
 
@@ -116,7 +116,8 @@ const DEMO={
     }
   }
 };
-function normalizePhone(v){return String(v??'').replace(/[٠-٩۰-۹]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)>=0?'٠١٢٣٤٥٦٧٨٩'.indexOf(d):'۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[\s\-().]/g,'').trim()}\nfunction hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
+function normalizePhone(v){return String(v??'').replace(/[٠-٩۰-۹]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)>=0?'٠١٢٣٤٥٦٧٨٩'.indexOf(d):'۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[\s\-().]/g,'').trim()}
+function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
 function storeFile(id){return path.join(DATA,encodeURIComponent(id)+'.json')}
 function load(id){const f=storeFile(id);if(!fs.existsSync(f)){save(id,{...structuredClone(DEMO),storeId:id,revision:1});}try{return JSON.parse(fs.readFileSync(f,'utf8'))}catch{return structuredClone(DEMO)}}
 function save(id,d){fs.writeFileSync(storeFile(id),JSON.stringify(d,null,2),'utf8')}
@@ -1074,11 +1075,11 @@ if(p==='/api/payment-settings'&&req.method==='PUT'){
     payment:db.paymentSettings
   });
 }
-const a=auth(req);if(!a)return json(res,401,{ok:false,message:'Ø§Ù†ØªÙ‡Øª Ø§Ù„Ø¬Ù„Ø³Ø© Ø£Ùˆ Ø§Ù„ØªÙˆÙƒÙ† ØºÙŠØ± ØµØ§Ù„Ø­'});const db=load(a.storeId);
+const a=auth(req);if(!a)return json(res,401,{ok:false,message:'انتهت الجلسة أو التوكن غير صالح'});const db=load(a.storeId);
  if(p==='/api/bootstrap'&&req.method==='GET')return json(res,200,{ok:true,storeId:a.storeId,revision:db.revision||1,db:{...db,users:db.users.map(safeUser)}});
- if(p==='/api/sync'&&req.method==='POST'){const b=await body(req);const rev=Number(b.revision||0);if(rev && rev!==(db.revision||1))return json(res,409,{ok:false,conflict:true,revision:db.revision||1,db});const incoming=b.db;if(!incoming||typeof incoming!=='object')return json(res,400,{ok:false,message:'Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© ØºÙŠØ± ØµØ§Ù„Ø­Ø©'});incoming.users=db.users;incoming.storeId=a.storeId;incoming.revision=(db.revision||1)+1;save(a.storeId,incoming);return json(res,200,{ok:true,revision:incoming.revision})}
+ if(p==='/api/sync'&&req.method==='POST'){const b=await body(req);const rev=Number(b.revision||0);if(rev && rev!==(db.revision||1))return json(res,409,{ok:false,conflict:true,revision:db.revision||1,db});const incoming=b.db;if(!incoming||typeof incoming!=='object')return json(res,400,{ok:false,message:'بيانات المزامنة غير صالحة'});incoming.users=db.users;incoming.storeId=a.storeId;incoming.revision=(db.revision||1)+1;save(a.storeId,incoming);return json(res,200,{ok:true,revision:incoming.revision})}
  if(p==='/api/products'&&req.method==='GET')return json(res,200,{ok:true,revision:db.revision||1,products:db.products||[]});
- if(p==='/api/products'&&req.method==='PUT'){if(a.role!=='Ù…Ø¯ÙŠØ±')return json(res,403,{ok:false,message:'Ø§Ù„Ø¹Ù…Ù„ÙŠØ© Ù„Ù„Ù…Ø¯ÙŠØ± ÙÙ‚Ø·'});const b=await body(req), id=Number(b.id||Date.now()), item={id,code:String(b.code||''),name:String(b.name||''),price:Number(b.price||0),cost:Number(b.cost||0),stock:Number(b.stock||0),unit:String(b.unit||'قطعة'),image:String(b.image||'')};if(!item.name||!item.code)return json(res,400,{ok:false,message:'Ø§Ø³Ù… Ø§Ù„ØµÙ†Ù ÙˆØ§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨Ø§Ù†'});const i=db.products.findIndex(x=>x.id===id);if(i>=0)db.products[i]=item;else db.products.unshift(item);db.revision=(db.revision||1)+1;save(a.storeId,db);return json(res,200,{ok:true,product:item,revision:db.revision})}
+ if(p==='/api/products'&&req.method==='PUT'){if(a.role!=='مدير')return json(res,403,{ok:false,message:'العملية للمدير فقط'});const b=await body(req), id=Number(b.id||Date.now()), item={id,code:String(b.code||''),name:String(b.name||''),price:Number(b.price||0),cost:Number(b.cost||0),stock:Number(b.stock||0),unit:String(b.unit||'قطعة'),image:String(b.image||'')};if(!item.name||!item.code)return json(res,400,{ok:false,message:'اسم الصنف والكود مطلوبان'});const i=db.products.findIndex(x=>x.id===id);if(i>=0)db.products[i]=item;else db.products.unshift(item);db.revision=(db.revision||1)+1;save(a.storeId,db);return json(res,200,{ok:true,product:item,revision:db.revision})}
  if(p==='/api/invoices'&&req.method==='GET')return json(res,200,{ok:true,invoices:db.invoices||[],revision:db.revision||1});
  if(p==='/api/orders/status'&&req.method==='PUT'){
 
@@ -1329,5 +1330,6 @@ if(p==='/api/orders'&&req.method==='GET'){
  return serveStatic(req,res)
 }
 http.createServer((req,res)=>handle(req,res).catch(e=>json(res,500,{ok:false,message:e.message||'Server error'}))).listen(PORT,HOST,()=>console.log(`Hesbah Online running on http://${HOST}:${PORT}`));
+
 
 

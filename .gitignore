@@ -1,33 +1,3 @@
-﻿# Android / Gradle
-mobile/.gradle/
-mobile/build/
-mobile/app/build/
-
-# Node
-node_modules/
-online/node_modules/
-
-# IDE
-.idea/
-*.iml
-
-# Generated files
-dist/
-build/
-
-# APK / AAB
-*.apk
-*.aab
-
-# Logs
-*.log
-
-tools/private-key.pem
-
-mobile/local.properties
-
-# Local Hesbah data
-online/data/*.json
-
-# Nested test repository
-Hesbah-Online/
+﻿node_modules/
+*.bak
+online/data/
