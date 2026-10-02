@@ -1331,7 +1331,7 @@ if(p==='/api/drivers'&&req.method==='GET'){
       currentOrderId:activeOrder?Number(activeOrder.id):null,
       currentOrderNumber:activeOrder?String(activeOrder.number||activeOrder.id):''
     };
-  }):[];
+  });
   return json(res,200,{ok:true,drivers});
 }
 
