@@ -114,6 +114,20 @@ if(!window.__hesbahCustomerCategoryHandler){
 
 function renderProducts(){const box=$('products');const visible=activeCategory==='الكل'?products:products.filter(p=>String(p.category||'عام')===activeCategory);if(!products.length){box.innerHTML='<div class="empty">لا توجد منتجات حالياً</div>';return}if(!visible.length){box.innerHTML='<div class="empty">لا توجد منتجات في تصنيف '+esc(activeCategory)+'</div>';return}box.innerHTML=visible.map(p=>{const ok=p.available===true;return '<article class="product">'+(!ok?'<span class="badge" style="position:absolute;margin:10px">غير متاح</span>':'')+'<div class="product-img">'+(p.image?'<img src="'+esc(p.image)+'" alt="'+esc(p.name)+'">':'<div class="placeholder">📦</div>')+'</div><div class="product-body"><div class="product-name">'+esc(p.name)+'</div><div class="price">'+Number(p.price||0).toFixed(2)+' جنيه</div><div class="unit">'+esc(p.unit||'قطعة')+'</div><button class="add" '+(!ok?'disabled':'')+' onclick="addToCart('+Number(p.id)+')">'+(ok?'إضافة للسلة':'غير متاح')+'</button></div></article>'}).join('')}
 
+function addToCart(id){
+  const p=products.find(x=>Number(x.id)===Number(id));
+  if(!p||p.available!==true)return;
+  const maxStock=Math.max(0,Number(p.stock||0));
+  if(maxStock<=0)return alert('المنتج غير متاح حالياً');
+  const x=cart.find(i=>Number(i.productId)===Number(id));
+  if(x){
+    if(Number(x.qty)>=maxStock)return alert('الكمية المتاحة من '+(p.name||'المنتج')+' هي '+maxStock);
+    x.qty+=1;
+  }else{
+    cart.push({productId:Number(p.id),code:String(p.code||''),name:String(p.name||''),price:Number(p.price||0),qty:1});
+  }
+  updateCart();
+}
 function updateCart(){$('cartCount').textContent=cart.reduce((a,x)=>a+Number(x.qty||0),0)}
 function openCart(){renderCart();$('cartModal').classList.remove('hidden')}
 function closeCart(){$('cartModal').classList.add('hidden')}
