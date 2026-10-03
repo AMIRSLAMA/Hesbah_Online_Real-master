@@ -1129,14 +1129,23 @@ if(p==='/api/public/products'&&req.method==='GET'){
           price:Number(x.price||0),
           unit:String(x.unit||'قطعة'),
           image:String(x.image||''),
+          category:String(x.category||'عام'),
           stock:Math.max(0,Number(x.stock||0)),
           available:Number(x.stock||0)>0
         }))
         .filter(x=>x.name)
     : [];
 
+  const categories=Array.isArray(db.categories)
+    ? db.categories.map(c=>String(c||'').trim()).filter(Boolean)
+    : [];
+  const categorySet=new Set(categories);
+  products.forEach(x=>{ if(!categorySet.has(x.category)) categories.push(x.category); });
+  if(!categories.length) categories.push('عام');
+
   return json(res,200,{
     ok:true,
+    categories,
     products
   });
 }
