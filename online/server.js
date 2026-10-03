@@ -615,7 +615,7 @@ if(p==='/api/public/login'&&req.method==='POST'){
   const storeId=String(b.storeId||'demo').trim()||'demo';
   const db=load(storeId);
 
-  const phone=String(b.phone||'').trim();
+  const phone=normalizePhone(b.phone);
   const password=String(b.password||'');
 
   if(!phone||!password){
