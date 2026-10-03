@@ -65,7 +65,36 @@ function save(){localStorage.setItem(KEY,JSON.stringify(db)); $("#saveStatus").t
 function onlineUrl(){return String(db.online?.url||"").trim().replace(/\/$/,"")}
 async function onlineFetch(path,opt={}){const base=onlineUrl();if(!base)throw new Error("أدخل عنوان سيرفر Hesbah أولًا");const headers={...(opt.headers||{}),"Content-Type":"application/json"};const token=localStorage.getItem("hesbah_online_token");if(token)headers.Authorization="Bearer "+token;const r=await fetch(base+path,{...opt,headers});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.message||`خطأ اتصال ${r.status}`);return d}
 async function connectOnline(){const cfg=db.online||{};if(!cfg.url)return toast("أدخل عنوان السيرفر أولًا");try{const d=await onlineFetch("/api/login",{method:"POST",body:JSON.stringify({storeId:cfg.storeId||"demo",username:"admin",password:"admin"})});localStorage.setItem("hesbah_online_token",d.token);return d}catch(e){toast("تعذر الاتصال: "+e.message);throw e}}
-async function syncOnline(show=true){if(syncBusy||!db.online?.enabled||!onlineUrl())return;syncBusy=true;try{let token=localStorage.getItem("hesbah_online_token");if(!token){await connectOnline();token=localStorage.getItem("hesbah_online_token");}const boot=await onlineFetch("/api/bootstrap");if((db.online.revision||0)===0)db.online.revision=boot.revision||1;const localRev=Number(db.online.revision||0);const serverRev=Number(boot.revision||0);if(localRev===0){const payload={revision:serverRev,db:{...db}};delete payload.db.online;const first=await onlineFetch("/api/sync",{method:"POST",body:JSON.stringify(payload)});db.online.revision=first.revision||serverRev;localStorage.setItem(KEY,JSON.stringify(db));if(show)toast("تم رفع بيانات الكاشير وربطها بالسيرفر");return}if(localRev!==serverRev){if(show)toast("تم تنزيل آخر بيانات من السيرفر");applyOnlineDb(boot.db);db.online.revision=serverRev;localStorage.setItem(KEY,JSON.stringify(db));return}const payload={revision:serverRev,db:{...db}};delete payload.db.online;const out=await onlineFetch("/api/sync",{method:"POST",body:JSON.stringify(payload)});db.online.revision=out.revision||serverRev;localStorage.setItem(KEY,JSON.stringify(db));if(show)toast("تمت المزامنة بنجاح")}catch(e){if(show)toast("فشلت المزامنة: "+e.message)}finally{syncBusy=false}}
+function mergeOnlineData(remote){
+  const keepOnline={...(db.online||{})};
+  const r=remote&&typeof remote==="object"?remote:{};
+  const mergeArray=(localArr,remoteArr,key)=>{
+    const out=Array.isArray(remoteArr)?remoteArr.map(x=>({...x})):[];
+    for(const item of (Array.isArray(localArr)?localArr:[])){
+      const idx=out.findIndex(x=>key(x)===key(item));
+      if(idx>=0) out[idx]={...out[idx],...item}; else out.push({...item});
+    }
+    return out;
+  };
+  const merged={...r, ...db, online:keepOnline};
+  merged.products=mergeArray(db.products,r.products,x=>String(x.id||x.code||x.name));
+  merged.customers=mergeArray(db.customers,r.customers,x=>String(x.id||x.phone||x.name));
+  merged.suppliers=mergeArray(db.suppliers,r.suppliers,x=>String(x.id||x.phone||x.name));
+  merged.expenses=mergeArray(db.expenses,r.expenses,x=>String(x.id||x.date||JSON.stringify(x)));
+  merged.invoices=mergeArray(db.invoices,r.invoices,x=>String(x.id||x.number||x.date));
+  merged.returns=mergeArray(db.returns,r.returns,x=>String(x.id||x.number||x.date));
+  merged.shifts=mergeArray(db.shifts,r.shifts,x=>String(x.id||x.openedAt||x.date));
+  merged.orders=Array.isArray(r.orders)?r.orders:[];
+  merged.drivers=Array.isArray(r.drivers)?r.drivers:[];
+  merged.paymentSettings=r.paymentSettings||db.paymentSettings;
+  merged.users=Array.isArray(r.users)&&r.users.length?r.users:db.users;
+  db=merged; ensureDatabase(); refreshBrandLogo();
+}
+async function syncOnline(show=true){if(syncBusy||!db.online?.enabled||!onlineUrl())return;syncBusy=true;try{let token=localStorage.getItem("hesbah_online_token");if(!token){await connectOnline();token=localStorage.getItem("hesbah_online_token");}const boot=await onlineFetch("/api/bootstrap");const serverRev=Number(boot.revision||1);const localRev=Number(db.online?.revision||0);
+  if(localRev!==serverRev){mergeOnlineData(boot.db);db.online.revision=serverRev;localStorage.setItem(KEY,JSON.stringify(db));if(show)toast("تم تحديث بيانات Hesbah Online على الكاشير");}
+  const payload={revision:serverRev,db:{...db}};delete payload.db.online;delete payload.db.orders;delete payload.db.drivers;
+  const out=await onlineFetch("/api/sync",{method:"POST",body:JSON.stringify(payload)});db.online.revision=out.revision||serverRev;localStorage.setItem(KEY,JSON.stringify(db));if(show)toast("تمت مزامنة الكاشير مع السيرفر");
+}catch(e){if(show)toast("فشلت المزامنة: "+e.message)}finally{syncBusy=false}}
 function applyOnlineDb(remote){const keepOnline=db.online;db={...remote,online:keepOnline};ensureDatabase();refreshBrandLogo()}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
 function money(n){return Number(n||0).toFixed(2)+" ج.م"}
@@ -163,9 +192,32 @@ async function getOnlineOrdersForDashboard(){
   var d=await onlineFetch("/api/orders");
   return Array.isArray(d.orders)?d.orders:[];
 }
+let onlineOrdersRefreshTimer=null;
+async function loadOnlineOrdersView(){
+  try{
+    var results=await Promise.all([getOnlineOrdersForDashboard(),onlineFetch("/api/drivers")]);
+    var orders=results[0], drivers=Array.isArray(results[1].drivers)?results[1].drivers:[];
+    if(!document.getElementById("onlineOrdersBox"))return;
+    if(!orders.length){$("#onlineOrdersBox").innerHTML='<p class="muted">لا توجد طلبات حتى الآن.</p>';return}
+    var rows=orders.map(function(o){
+      var opts=["accepted","preparing","ready","out_for_delivery","completed","rejected"].filter(function(s){return s!==o.status}).map(function(s){return '<option value="'+s+'">'+s+'</option>'}).join("");
+      var assignedId=Number(o.driverId||0);
+      var driverOptions='<option value="">اختر المندوب</option>'+drivers.map(function(d){var selected=Number(d.id)===assignedId?' selected':'';var disabled=(d.status==='busy'&&Number(d.id)!==assignedId)||d.active===false?' disabled':'';var label=escape(d.name||d.username||"مندوب");if(d.status==='busy'&&Number(d.id)!==assignedId)label+=' — مشغول';else if(d.status==='inactive')label+=' — غير متاح';return '<option value="'+Number(d.id)+'"'+selected+disabled+'>'+label+'</option>';}).join("");
+      var assigned=assignedId?(escape(o.driverName||"مندوب")+"<br><small>"+escape(o.driverPhone||"")+"</small>"):'<span class="muted">غير معين</span>';
+      return '<tr><td>'+escape(o.number||o.id)+'</td><td>'+escape((o.customer&&o.customer.name)||"")+'</td><td>'+money(o.total)+'</td><td>'+escape(o.status||"new")+'</td><td>'+assigned+'</td><td><select onchange="assignOnlineOrderDriver('+Number(o.id)+',this.value)"'+(o.status==="completed"||o.status==="rejected"?' disabled':'')+'>'+driverOptions+'</select></td><td>'+new Date(o.createdAt||Date.now()).toLocaleString("ar-EG")+'</td><td><select onchange="updateOnlineOrderStatus('+Number(o.id)+',this.value)"><option value="'+escape(o.status||"new")+'">'+escape(o.status||"new")+'</option>'+opts+'</select></td></tr>';
+    }).join("");
+    $("#onlineOrdersBox").innerHTML='<div class="table-wrap"><table class="table"><thead><tr><th>الطلب</th><th>العميل</th><th>الإجمالي</th><th>الحالة</th><th>المندوب الحالي</th><th>تعيين مندوب</th><th>التاريخ</th><th>تحديث الحالة</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }catch(e){if(document.getElementById("onlineOrdersBox"))$("#onlineOrdersBox").textContent="تعذر تحميل الطلبات أو المندوبين: "+e.message}
+}
 function renderOnlineOrders(){
+  if(onlineOrdersRefreshTimer){clearInterval(onlineOrdersRefreshTimer);onlineOrdersRefreshTimer=null;}
   if(!db.online||!db.online.url){$("#content").innerHTML='<div class="card"><h2>الطلبات الأونلاين</h2><p>اربط Hesbah Online من الإعدادات أولًا.</p></div>';return}
-  $("#content").innerHTML='<div class="page-head"><div><h1>الطلبات الأونلاين</h1><p>متابعة حالة الطلب وتعيين مندوب التوصيل.</p></div><button class="secondary" onclick="route(\'dashboard\')">لوحة التحكم</button></div><div class="card" id="onlineOrdersBox">جاري التحميل...</div>';
+  $("#content").innerHTML='<div class="page-head"><div><h1>الطلبات الأونلاين</h1><p>طلبات السيرفر مباشرة — تتحدث تلقائيًا كل 5 ثوانٍ.</p></div><button class="secondary" onclick="route(\'dashboard\')">لوحة التحكم</button></div><div class="card" id="onlineOrdersBox">جاري التحميل...</div>';
+  loadOnlineOrdersView();
+  onlineOrdersRefreshTimer=setInterval(loadOnlineOrdersView,5000);
+  window.addEventListener("beforeunload",function(){if(onlineOrdersRefreshTimer)clearInterval(onlineOrdersRefreshTimer)},{once:true});
+}
+/* Legacy rendering block replaced by direct server refresh. */
   Promise.all([getOnlineOrdersForDashboard(),onlineFetch("/api/drivers")]).then(function(results){
     var orders=results[0], drivers=Array.isArray(results[1].drivers)?results[1].drivers:[];
     if(!orders.length){$("#onlineOrdersBox").innerHTML='<p class="muted">لا توجد طلبات حتى الآن.</p>';return}
