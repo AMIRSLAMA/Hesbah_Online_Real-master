@@ -1088,6 +1088,7 @@ if(p==='/api/public/products'&&req.method==='GET'){
           price:Number(x.price||0),
           unit:String(x.unit||'قطعة'),
           image:String(x.image||''),
+          stock:Math.max(0,Number(x.stock||0)),
           available:Number(x.stock||0)>0
         }))
         .filter(x=>x.name)
