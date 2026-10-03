@@ -54,7 +54,7 @@ function decodeLicense(code) {
   const verify=crypto.createVerify("RSA-SHA256"); verify.update(body); verify.end();
   if(!verify.verify(PUBLIC_KEY,sig,"base64url")) throw new Error("كود التفعيل غير صالح");
   const payload=JSON.parse(Buffer.from(body,"base64url").toString("utf8"));
-  if(payload.product!=="AmirCasher") throw new Error("الكود ليس لبرنامج AmirCasher");
+  if(payload.product!=="Hesbah") throw new Error("الكود ليس لبرنامج Hesbah");
   if(payload.machineId!==machineId()) throw new Error("كود التفعيل خاص بجهاز آخر");
   if(!payload.expiresAt || new Date(payload.expiresAt).getTime() < Date.now()) throw new Error("انتهت صلاحية كود التفعيل");
   return payload;
@@ -63,7 +63,7 @@ function licenseStatus() {
   const now=Date.now(); let st=readLicense();
   if(!st){ st={trialStartedAt:new Date().toISOString()}; writeLicense(st); }
   if(st.licenseCode){ try { const p=decodeLicense(st.licenseCode); return {status:"مفعل", customer:p.customer, expiresAt:p.expiresAt, machineId:machineId(), trial:false}; } catch(e){ return {status:"منتهي", error:e.message, machineId:machineId(), trial:false}; } }
-  const trialEnd=new Date(st.trialStartedAt).getTime()+15*86400000;
+  const trialEnd=new Date(st.trialStartedAt).getTime()+3*86400000;
   if(now<trialEnd) return {status:"تجريبي", expiresAt:new Date(trialEnd).toISOString(), machineId:machineId(), trial:true, daysLeft:Math.ceil((trialEnd-now)/86400000)};
   return {status:"منتهي", expiresAt:new Date(trialEnd).toISOString(), machineId:machineId(), trial:true, daysLeft:0};
 }
