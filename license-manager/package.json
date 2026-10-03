@@ -3,6 +3,29 @@
   "version": "1.0.0",
   "description": "Hesbah License Manager - أداة إدارية لإصدار تراخيص Hesbah",
   "main": "main.js",
-  "scripts": { "start": "electron ." },
-  "devDependencies": { "electron": "^38.0.0" }
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.hesbah.licensemanager",
+    "productName": "Hesbah License Manager",
+    "directories": { "output": "dist" },
+    "files": ["**/*", "!dist/**/*"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "artifactName": "Hesbah-License-Manager-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Hesbah License Manager"
+    }
+  }
 }
