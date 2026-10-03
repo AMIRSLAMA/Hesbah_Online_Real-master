@@ -1,3 +1,4 @@
 ﻿node_modules/
 *.bak
 online/data/
+tools/private-key.pem
