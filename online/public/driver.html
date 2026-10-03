@@ -34,7 +34,8 @@ input{border:1px solid #d1d5db}.primary{background:#2563eb;color:#fff}.start{bac
   .driver-chat-input input{font-size:15px;height:48px}
   .driver-chat-input{grid-template-columns:minmax(0,1fr) 82px}.driver-chat-input button{width:82px !important;min-width:82px;height:48px}
 }
-</style></head>
+</style>
+<style>.customer-location{margin-top:10px;padding:10px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe}.customer-location b{color:#1d4ed8}.customer-location button{background:#2563eb;color:#fff}.customer-location iframe{width:100%;height:190px;border:0;border-radius:12px;margin-top:8px}</style></head>
 <body>
 <div class="wrap">
   <div id="loginCard" class="card">
@@ -166,11 +167,17 @@ function stopDriverOrderPolling(){
 function renderOrder(o){
   const address=[o.customer?.address,o.customer?.building?'عمارة '+o.customer.building:'',o.customer?.floor?'الدور '+o.customer.floor:'',o.customer?.apartment?'شقة '+o.customer.apartment:''].filter(Boolean).join(' - ');
   const tracking=Number(o.id)===Number(activeOrderId);
+  const cl=o.customerLocation&&Number.isFinite(Number(o.customerLocation.lat))&&Number.isFinite(Number(o.customerLocation.lng))
+    ? {lat:Number(o.customerLocation.lat),lng:Number(o.customerLocation.lng)} : null;
+  const customerMap=cl
+    ? '<div class="customer-location"><b>📍 موقع العميل</b><div class="muted">تم تحديد موقع العميل على الخريطة</div><iframe loading="lazy" src="https://www.google.com/maps?q='+cl.lat+','+cl.lng+'&z=16&output=embed"></iframe><button class="primary" onclick="openCustomerLocation('+cl.lat+','+cl.lng+')">🗺️ فتح الموقع في الخرائط</button></div>'
+    : '<div class="customer-location"><b>📍 موقع العميل</b><div class="muted">العميل لم يرسل موقعه الجغرافي مع الطلب.</div>';
   return '<div class="order">'+
     '<b>🧾 '+esc(o.number)+'</b>'+
     '<div>👤 '+esc(o.customer?.name||'')+'</div>'+
     '<div>📞 '+esc(o.customer?.phone||'')+'</div>'+
     '<div>📍 '+esc(address||'العنوان غير مسجل')+'</div>'+
+    customerMap+
     '<div>💰 '+Number(o.total||0).toFixed(2)+' ج.م</div>'+
     '<div class="muted">الحالة: '+esc(o.status)+'</div>'+
     (o.status==='out_for_delivery'?
@@ -188,6 +195,11 @@ function gpsErrorMessage(e){
   if(e?.code===2) return 'تعذر تحديد موقع GPS. تأكد أن GPS/الموقع مفتوح وأنك في مكان يمكن للهاتف استقبال الموقع فيه.';
   if(e?.code===3) return 'انتهت مهلة قراءة GPS. اترك الموقع مفتوحاً وحاول مرة أخرى.';
   return e?.message||'تعذر قراءة GPS';
+}
+
+function openCustomerLocation(lat,lng){
+  const url='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(lat+','+lng);
+  window.open(url,'_blank','noopener,noreferrer');
 }
 
 function startTracking(orderId){
