@@ -16,7 +16,8 @@ const defaults = {
     orangeCash:{enabled:false,name:"Orange Cash",number:""},
     wePay:{enabled:false,name:"WE Pay",number:""},
     instapay:{enabled:false,name:"InstaPay",account:""},
-    card:{enabled:false,name:"Visa / Mastercard",provider:"",publicKey:""}
+    card:{enabled:false,name:"Visa / Mastercard",provider:"",publicKey:""},
+    delivery:{enabled:true,name:"رسوم التوصيل",fee:0}
   },
   qrMenu:{showLogo:true,showName:true,layout:"all"},
   categories:["عام"],
@@ -496,6 +497,7 @@ function settingsPanel(tab){
  <div><label><input type="checkbox" id="posPayWeEnabled"> 📱 WE Pay</label><input id="posPayWeName" placeholder="اسم طريقة الدفع"><input id="posPayWeNumber" placeholder="رقم WE Pay"></div>
  <div><label><input type="checkbox" id="posPayInstapayEnabled"> 🏦 InstaPay</label><input id="posPayInstapayName" placeholder="اسم طريقة الدفع"><input id="posPayInstapayAccount" placeholder="حساب / عنوان InstaPay"></div>
  <div><label><input type="checkbox" id="posPayCardEnabled"> 💳 Visa / Mastercard</label><input id="posPayCardName" placeholder="اسم طريقة الدفع"><input id="posPayCardProvider" placeholder="مزود خدمة الدفع"><input id="posPayCardPublicKey" placeholder="Public Key"></div>
+ <div><label><input type="checkbox" id="posDeliveryEnabled"> 🛵 خدمة التوصيل</label><input id="posDeliveryName" placeholder="اسم خدمة التوصيل"><input id="posDeliveryFee" type="number" min="0" step="0.01" placeholder="رسوم التوصيل بالجنيه"></div>
  </div><div class="form-actions"><button class="primary" onclick="savePaymentSettingsPOS()">💾 حفظ إعدادات الدفع</button><button class="secondary" onclick="loadPaymentSettingsPOS()">🔄 تحديث</button></div><div id="posPaymentMsg" class="muted" style="margin-top:12px"></div></div>`;
  loadPaymentSettingsPOS();
  if(tab==="activation")p.innerHTML=`<div class="card"><h2>تفعيل البرنامج</h2><div class="grid g2"><label>حالة البرنامج<input id="actStatus" value="جاري التحقق..." disabled></label><label>Machine ID<input id="machineId" value="جاري القراءة..." disabled></label><label>كود التفعيل<input id="actCode" value="${escape(db.activation.code)}" placeholder="الصق كود التفعيل هنا"></label><label>اسم العميل<input id="actCustomer" value="${escape(db.activation.customer)}" disabled></label></div><div id="trialInfo" class="muted" style="margin-top:12px"></div><div class="form-actions"><button class="primary" onclick="saveActivation()">تفعيل البرنامج</button></div><p class="muted">أرسل الـ Machine ID للإدارة ليتم إصدار كود خاص بهذا الجهاز.</p></div>`; refreshLicense().then(st=>{if($("#machineId"))$("#machineId").value=st.machineId||"-"; if($("#actStatus"))$("#actStatus").value=st.status+(st.trial&&st.daysLeft!=null?` — متبقي ${st.daysLeft} يوم`:""); if($("#actCustomer"))$("#actCustomer").value=st.customer||db.activation.customer||""; if($("#trialInfo"))$("#trialInfo").textContent=st.trial?`الفترة التجريبية: 15 يوم — المتبقي ${st.daysLeft} يوم — تنتهي في ${new Date(st.expiresAt).toLocaleDateString("ar-EG")}`:(st.expiresAt?`التفعيل ساري حتى ${new Date(st.expiresAt).toLocaleDateString("ar-EG")}`:"")});
@@ -539,6 +541,9 @@ async function loadPaymentSettingsPOS(){
     $("#posPayCardName").value=p.card?.name||"Visa / Mastercard";
     $("#posPayCardProvider").value=p.card?.provider||"";
     $("#posPayCardPublicKey").value=p.card?.publicKey||"";
+    $("#posDeliveryEnabled").checked=p.delivery?.enabled!==false;
+    $("#posDeliveryName").value=p.delivery?.name||"رسوم التوصيل";
+    $("#posDeliveryFee").value=Number(p.delivery?.fee||0);
 
     db.paymentSettings=p;
     if(msg)msg.textContent="✓ تم تحميل إعدادات الدفع";
@@ -557,7 +562,8 @@ async function savePaymentSettingsPOS(){
     orangeCash:{enabled:$("#posPayOrangeEnabled").checked,name:$("#posPayOrangeName").value.trim(),number:$("#posPayOrangeNumber").value.trim()},
     wePay:{enabled:$("#posPayWeEnabled").checked,name:$("#posPayWeName").value.trim(),number:$("#posPayWeNumber").value.trim()},
     instapay:{enabled:$("#posPayInstapayEnabled").checked,name:$("#posPayInstapayName").value.trim(),account:$("#posPayInstapayAccount").value.trim()},
-    card:{enabled:$("#posPayCardEnabled").checked,name:$("#posPayCardName").value.trim(),provider:$("#posPayCardProvider").value.trim(),publicKey:$("#posPayCardPublicKey").value.trim()}
+    card:{enabled:$("#posPayCardEnabled").checked,name:$("#posPayCardName").value.trim(),provider:$("#posPayCardProvider").value.trim(),publicKey:$("#posPayCardPublicKey").value.trim()},
+    delivery:{enabled:$("#posDeliveryEnabled").checked,name:$("#posDeliveryName").value.trim()||"رسوم التوصيل",fee:Math.max(0,Number($("#posDeliveryFee").value||0))}
   };
 
   try{
