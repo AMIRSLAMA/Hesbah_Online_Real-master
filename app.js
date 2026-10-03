@@ -114,6 +114,11 @@ function mergeOnlineData(remote){
     return out;
   };
   const merged={...r, ...db, online:keepOnline};
+  // Categories are shared between Windows POS and Hesbah Online. Keep the union so a POS with an older local category list cannot overwrite newer server categories.
+  const localCategories=Array.isArray(db.categories)?db.categories:[];
+  const remoteCategories=Array.isArray(r.categories)?r.categories:[];
+  merged.categories=[...new Set([...remoteCategories,...localCategories].map(c=>String(c||"").trim()).filter(Boolean))];
+  if(!merged.categories.length)merged.categories=["عام"];
   merged.products=mergeArray(db.products,r.products,x=>String(x.id||x.code||x.name));
   merged.customers=mergeArray(db.customers,r.customers,x=>String(x.id||x.phone||x.name));
   merged.suppliers=mergeArray(db.suppliers,r.suppliers,x=>String(x.id||x.phone||x.name));
