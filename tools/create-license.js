@@ -20,7 +20,7 @@ if (!fs.existsSync(keyPath) || !fs.existsSync(publicPath)) {
 
 const privateKey = fs.readFileSync(keyPath, 'utf8');
 const payload = {
-  product: 'AmirCasher',
+  product: 'Hesbah',
   customer,
   machineId,
   issuedAt: new Date().toISOString(),
@@ -32,7 +32,7 @@ signer.update(body); signer.end();
 const sig = signer.sign(privateKey, 'base64url');
 
 console.log('\n==============================');
-console.log('AmirCasher Activation Code');
+console.log('Hesbah Activation Code');
 console.log('==============================');
 console.log(body + '.' + sig);
 console.log('==============================\n');
