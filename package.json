@@ -1,6 +1,6 @@
 {
   "name": "hesbah-pos",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Hesbah POS - نظام كاشير وإدارة مبيعات محلي مع تفعيل وتجربة 15 يوم",
   "main": "main.js",
   "author": "Amir Salama Khalaf Allah",
@@ -44,5 +44,14 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Hesbah"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "AMIRSLAMA",
+    "repo": "Hesbah_Online_Real-master",
+    "releaseType": "release"
   }
 }
