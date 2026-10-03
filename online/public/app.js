@@ -563,7 +563,7 @@ async function savePaymentSettingsPOS(){
     wePay:{enabled:$("#posPayWeEnabled").checked,name:$("#posPayWeName").value.trim(),number:$("#posPayWeNumber").value.trim()},
     instapay:{enabled:$("#posPayInstapayEnabled").checked,name:$("#posPayInstapayName").value.trim(),account:$("#posPayInstapayAccount").value.trim()},
     card:{enabled:$("#posPayCardEnabled").checked,name:$("#posPayCardName").value.trim(),provider:$("#posPayCardProvider").value.trim(),publicKey:$("#posPayCardPublicKey").value.trim()},
-    delivery:{enabled:$("#posDeliveryEnabled").checked,name:$("#posDeliveryName").value.trim()||"رسوم التوصيل",fee:Math.max(0,Number($("#posDeliveryFee").value||0))}
+    delivery:{enabled:$("#posDeliveryEnabled").checked,name:$("#posDeliveryName").value.trim()||"رسوم التوصيل",fee:Math.max(0,Number(String($("#posDeliveryFee").value||"0").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/,/g,"."))||0)}
   };
 
   try{
