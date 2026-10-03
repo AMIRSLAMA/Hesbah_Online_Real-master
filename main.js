@@ -1,10 +1,33 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const crypto = require("crypto");
 
 let win;
+let updateEventsBound=false;
+function sendUpdateStatus(payload){
+  try{ if(win && !win.isDestroyed()) win.webContents.send("update-status", payload); }catch{}
+}
+function setupAutoUpdater(){
+  if(!app.isPackaged) return;
+  autoUpdater.autoDownload=true;
+  autoUpdater.autoInstallOnAppQuit=false;
+  autoUpdater.on("checking-for-update",()=>sendUpdateStatus({state:"checking",message:"🔎 جاري البحث عن تحديث..."}));
+  autoUpdater.on("update-available",info=>sendUpdateStatus({state:"available",version:info?.version||"",message:"⬇️ يوجد تحديث جديد — جاري تنزيله..."}));
+  autoUpdater.on("download-progress",p=>sendUpdateStatus({state:"downloading",percent:Math.round(Number(p?.percent||0)),message:"⬇️ جاري تنزيل التحديث "+Math.round(Number(p?.percent||0))+"%"}));
+  autoUpdater.on("update-not-available",info=>sendUpdateStatus({state:"none",version:info?.version||"",message:"✅ البرنامج محدث بالفعل"}));
+  autoUpdater.on("update-downloaded",info=>sendUpdateStatus({state:"downloaded",version:info?.version||"",message:"✅ تم تنزيل التحديث — جاهز لإعادة التشغيل"}));
+  autoUpdater.on("error",err=>sendUpdateStatus({state:"error",message:"تعذر تحديث البرنامج: "+(err?.message||err)}));
+}
+async function checkForUpdates(){
+  if(!app.isPackaged) return {ok:false,dev:true,message:"التحديث يعمل بعد تثبيت نسخة Hesbah."};
+  try{
+    const r=await autoUpdater.checkForUpdates();
+    return {ok:true,available:!!r?.updateInfo && r.updateInfo.version!==app.getVersion(),version:r?.updateInfo?.version||""};
+  }catch(e){ sendUpdateStatus({state:"error",message:"تعذر فحص التحديث: "+(e?.message||e)}); return {ok:false,error:e?.message||String(e)}; }
+}
 const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAqU4cfPQ+GwuNPMxcej0j
 8uKZEWOtbu4cSSRry7pnkL+eG3ib+e0N1j8K7nLEdFPc1LvGtGtNK2WNzm86aWPF
@@ -66,6 +89,12 @@ function createWindow() {
 }
 
 ipcMain.handle("license-info", async () => licenseStatus());
+ipcMain.handle("check-for-updates", async () => checkForUpdates());
+ipcMain.handle("install-update", async () => {
+  if(!app.isPackaged) return {ok:false,message:"التحديث يعمل بعد تثبيت نسخة Hesbah."};
+  autoUpdater.quitAndInstall(false,true);
+  return {ok:true};
+});
 ipcMain.handle("activate-license", async (event, code) => {
   try { const payload=decodeLicense(code); writeLicense({trialStartedAt:readLicense()?.trialStartedAt||new Date().toISOString(), licenseCode:String(code).trim()}); return {ok:true, status:"مفعل", customer:payload.customer, expiresAt:payload.expiresAt, machineId:machineId()}; }
   catch(e){ return {ok:false, error:e.message, machineId:machineId()}; }
@@ -116,6 +145,10 @@ ipcMain.handle("restore-backup", async () => {
   return { canceled: false, content: fs.readFileSync(result.filePaths[0], "utf8"), path: result.filePaths[0] };
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(()=>{
+  createWindow();
+  setupAutoUpdater();
+  if(app.isPackaged) setTimeout(()=>checkForUpdates(),8000);
+});
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
 app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
