@@ -572,32 +572,33 @@ async function savePaymentSettingsPOS(){
     if(msg)msg.textContent="جاري الحفظ...";
     if(db.online?.url){
       try{
-        await onlineFetch("/api/payment-settings",{
+        const saved=await onlineFetch("/api/payment-settings",{
           method:"PUT",
           body:JSON.stringify(payload)
         });
+        if(saved?.payment){
+          db.paymentSettings=saved.payment;
+          save();
+        }
       }catch(firstError){
         // If the saved login token expired, reconnect once and retry the save.
         if(/401|انتهت الجلسة|التوكن غير صالح/i.test(String(firstError.message||""))){
           localStorage.removeItem("hesbah_online_token");
           await connectOnline();
-          await onlineFetch("/api/payment-settings",{
+          const saved=await onlineFetch("/api/payment-settings",{
             method:"PUT",
             body:JSON.stringify(payload)
           });
+          if(saved?.payment){
+            db.paymentSettings=saved.payment;
+            save();
+          }
         }else{
           throw firstError;
         }
       }
-      // Keep the authoritative server response locally so reopening the settings
-      // screen cannot replace the newly saved delivery fee with an old value.
-      try{
-        const fresh=await onlineFetch(`/api/public/payment-methods?storeId=${encodeURIComponent(db.online?.storeId||"demo")}`);
-        if(fresh?.payment){
-          db.paymentSettings=fresh.payment;
-          save();
-        }
-      }catch(_){}
+      // Do not re-read payment settings from the public endpoint here.
+      // The PUT response above is the authoritative value just saved for this store.
       if(msg)msg.textContent="✅ تم الحفظ ومزامنة طرق الدفع والتوصيل مع Hesbah Online";
     }else{
       if(msg)msg.textContent="✅ تم الحفظ محليًا. اربط Hesbah Online ليظهر التغيير للعميل.";
