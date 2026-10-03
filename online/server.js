@@ -1284,6 +1284,18 @@ incoming.revision=(db.revision||1)+1;for(const u of incomingUsers){if(String(u.r
     });
   }
 
+  // Stock was reserved when the online order was created.
+  // Return it exactly once if the manager rejects the order.
+  if(newStatus==='rejected' && currentStatus!=='rejected' && !order.stockReleased){
+    for(const item of (Array.isArray(order.items)?order.items:[])){
+      const product=Array.isArray(db.products)
+        ? db.products.find(x=>Number(x.id)===Number(item.productId))
+        : null;
+      if(product) product.stock=Number(product.stock||0)+Number(item.qty||0);
+    }
+    order.stockReleased=true;
+  }
+
   order.status=newStatus;
 
   order.statusUpdatedAt=
