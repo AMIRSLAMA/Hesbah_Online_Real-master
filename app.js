@@ -217,27 +217,6 @@ function renderOnlineOrders(){
   onlineOrdersRefreshTimer=setInterval(loadOnlineOrdersView,5000);
   window.addEventListener("beforeunload",function(){if(onlineOrdersRefreshTimer)clearInterval(onlineOrdersRefreshTimer)},{once:true});
 }
-/* Legacy rendering block replaced by direct server refresh. */
-  Promise.all([getOnlineOrdersForDashboard(),onlineFetch("/api/drivers")]).then(function(results){
-    var orders=results[0], drivers=Array.isArray(results[1].drivers)?results[1].drivers:[];
-    if(!orders.length){$("#onlineOrdersBox").innerHTML='<p class="muted">لا توجد طلبات حتى الآن.</p>';return}
-    var rows=orders.map(function(o){
-      var opts=["accepted","preparing","ready","out_for_delivery","completed","rejected"].filter(function(s){return s!==o.status}).map(function(s){return '<option value="'+s+'">'+s+'</option>'}).join("");
-      var assignedId=Number(o.driverId||0);
-      var driverOptions='<option value="">اختر المندوب</option>'+drivers.map(function(d){
-        var selected=Number(d.id)===assignedId?' selected':'';
-        var disabled=(d.status==='busy'&&Number(d.id)!==assignedId)||d.active===false?' disabled':'';
-        var label=escape(d.name||d.username||"مندوب");
-        if(d.status==='busy'&&Number(d.id)!==assignedId)label+=' — مشغول';
-        else if(d.status==='inactive')label+=' — غير متاح';
-        return '<option value="'+Number(d.id)+'"'+selected+disabled+'>'+label+'</option>';
-      }).join("");
-      var assigned=assignedId?(escape(o.driverName||"مندوب")+"<br><small>"+escape(o.driverPhone||"")+"</small>"):'<span class="muted">غير معين</span>';
-      return '<tr><td>'+escape(o.number||o.id)+'</td><td>'+escape((o.customer&&o.customer.name)||"")+'</td><td>'+money(o.total)+'</td><td>'+escape(o.status||"new")+'</td><td>'+assigned+'</td><td><select onchange="assignOnlineOrderDriver('+Number(o.id)+',this.value)"'+(o.status==="completed"||o.status==="rejected"?' disabled':'')+'>'+driverOptions+'</select></td><td>'+new Date(o.createdAt||Date.now()).toLocaleString("ar-EG")+'</td><td><select onchange="updateOnlineOrderStatus('+Number(o.id)+',this.value)"><option value="'+escape(o.status||"new")+'">'+escape(o.status||"new")+'</option>'+opts+'</select></td></tr>';
-    }).join("");
-    $("#onlineOrdersBox").innerHTML='<div class="table-wrap"><table class="table"><thead><tr><th>الطلب</th><th>العميل</th><th>الإجمالي</th><th>الحالة</th><th>المندوب الحالي</th><th>تعيين مندوب</th><th>التاريخ</th><th>تحديث الحالة</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-  }).catch(function(e){$("#onlineOrdersBox").textContent="تعذر تحميل الطلبات أو المندوبين: "+e.message});
-}
 window.assignOnlineOrderDriver=async function(orderId,driverId){
   if(!isManager())return denySeller();
   if(!driverId)return;
