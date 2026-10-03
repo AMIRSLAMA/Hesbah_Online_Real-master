@@ -67,30 +67,43 @@
 
   <main id="app" class="hidden">
 
-    <header>
-
-      <div>
-
-        <b>Hesbah Online</b>
-
-        <small id="shop"></small>
-
+    <header class="dash-header">
+      <div class="dash-brand">
+        <div class="dash-logo">H</div>
+        <div>
+          <b>Hesbah <span>Online</span></b>
+          <small id="shop"></small>
+        </div>
       </div>
-      <button
+      <nav class="dash-nav" aria-label="التنقل السريع">
+        <button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">الرئيسية</button>
+        <button type="button" onclick="document.querySelector('.orders-section')?.scrollIntoView({behavior:'smooth'})">الطلبات</button>
+        <button type="button" onclick="document.querySelector('.card')?.scrollIntoView({behavior:'smooth'})">التشغيل</button>
+        <button type="button" onclick="document.getElementById('paymentSettingsSection')?.scrollIntoView({behavior:'smooth'})">الإعدادات</button>
+      </nav>
+      <div class="dash-header-actions">
+<button
         class="ghost"
         onclick="document.getElementById('paymentSettingsSection').scrollIntoView({behavior:'smooth',block:'start'})">
         ?? ??????? ?????
       </button>
 
 
-      <button
-        class="ghost"
-        onclick="logout()">
-        خروج
-      </button>
-
+      <button class="ghost" onclick="logout()">خروج</button>
+      </div>
     </header>
 
+
+    <section class="dashboard-welcome">
+      <div>
+        <span class="welcome-kicker">لوحة التحكم</span>
+        <h1>مرحبًا بك في Hesbah 👋</h1>
+        <p>تابع المبيعات والطلبات والتوصيل والمخزون من مكان واحد.</p>
+      </div>
+      <div class="welcome-actions">
+        <button class="welcome-btn" onclick="loadOrders()">↻ تحديث البيانات</button>
+      </div>
+    </section>
 
     <!-- Statistics -->
 
