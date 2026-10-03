@@ -219,6 +219,26 @@ const customer={
     });
   }
 
+  // Inventory is server-authoritative for online orders.
+  // Validate the full cart before changing any stock so a partial order can never be created.
+  for(const item of items){
+    const product=Array.isArray(db.products)
+      ? db.products.find(x=>Number(x.id)===Number(item.productId))
+      : null;
+    if(!product){
+      return json(res,404,{ok:false,message:'المنتج غير موجود: '+String(item.name||'')});
+    }
+    const stock=Number(product.stock||0);
+    const qty=Number(item.qty||0);
+    if(stock<qty){
+      return json(res,409,{
+        ok:false,
+        message:'الكمية غير متاحة من المنتج: '+String(product.name||item.name||'')+
+          ' — المتاح '+stock
+      });
+    }
+  }
+
   const total=items.reduce(
     (sum,x)=>sum+(x.price*x.qty),0
   );
@@ -286,6 +306,12 @@ addItemsUntil:Date.now() + (3 * 60 * 1000),
 };
 
   if(!Array.isArray(db.orders))db.orders=[];
+
+  // Deduct stock only after the complete order has passed validation.
+  for(const item of items){
+    const product=db.products.find(x=>Number(x.id)===Number(item.productId));
+    if(product) product.stock=Number(product.stock||0)-Number(item.qty||0);
+  }
 
   db.orders.unshift(order);
   if(loggedCustomer){
