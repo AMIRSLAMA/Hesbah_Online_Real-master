@@ -571,15 +571,38 @@ async function savePaymentSettingsPOS(){
     save();
     if(msg)msg.textContent="جاري الحفظ...";
     if(db.online?.url){
-      await onlineFetch("/api/payment-settings",{
-        method:"PUT",
-        body:JSON.stringify(payload)
-      });
-      if(msg)msg.textContent="✅ تم الحفظ ومزامنة طرق الدفع مع Hesbah Online";
+      try{
+        await onlineFetch("/api/payment-settings",{
+          method:"PUT",
+          body:JSON.stringify(payload)
+        });
+      }catch(firstError){
+        // If the saved login token expired, reconnect once and retry the save.
+        if(/401|انتهت الجلسة|التوكن غير صالح/i.test(String(firstError.message||""))){
+          localStorage.removeItem("hesbah_online_token");
+          await connectOnline();
+          await onlineFetch("/api/payment-settings",{
+            method:"PUT",
+            body:JSON.stringify(payload)
+          });
+        }else{
+          throw firstError;
+        }
+      }
+      // Keep the authoritative server response locally so reopening the settings
+      // screen cannot replace the newly saved delivery fee with an old value.
+      try{
+        const fresh=await onlineFetch("/api/public/payment-methods");
+        if(fresh?.payment){
+          db.paymentSettings=fresh.payment;
+          save();
+        }
+      }catch(_){}
+      if(msg)msg.textContent="✅ تم الحفظ ومزامنة طرق الدفع والتوصيل مع Hesbah Online";
     }else{
       if(msg)msg.textContent="✅ تم الحفظ محليًا. اربط Hesbah Online ليظهر التغيير للعميل.";
     }
-    toast("تم حفظ إعدادات الدفع");
+    toast("تم حفظ إعدادات الدفع والتوصيل");
   }catch(e){
     if(msg)msg.textContent="❌ "+(e.message||"تعذر حفظ إعدادات الدفع");
   }
