@@ -117,7 +117,13 @@ function mergeOnlineData(remote){
   // Categories are shared between Windows POS and Hesbah Online. Keep the union so a POS with an older local category list cannot overwrite newer server categories.
   const localCategories=Array.isArray(db.categories)?db.categories:[];
   const remoteCategories=Array.isArray(r.categories)?r.categories:[];
-  merged.categories=[...new Set([...remoteCategories,...localCategories].map(c=>String(c||"").trim()).filter(Boolean))];
+  // Also recover categories directly from product records. This covers older server data
+  // where products had categories but the top-level categories array was still only ["عام"].
+  const localProductCategories=Array.isArray(db.products)?db.products.map(p=>p?.category):[];
+  const remoteProductCategories=Array.isArray(r.products)?r.products.map(p=>p?.category):[];
+  merged.categories=[...new Set([
+    ...remoteCategories,...localCategories,...remoteProductCategories,...localProductCategories
+  ].map(c=>String(c||"").trim()).filter(Boolean))];
   if(!merged.categories.length)merged.categories=["عام"];
   merged.products=mergeArray(db.products,r.products,x=>String(x.id||x.code||x.name));
   merged.customers=mergeArray(db.customers,r.customers,x=>String(x.id||x.phone||x.name));
