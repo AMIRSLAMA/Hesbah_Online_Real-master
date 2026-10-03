@@ -384,3 +384,57 @@ main#app>header.dash-header{
   .dashboard-welcome h1{font-size:23px}
   .welcome-actions,.welcome-btn{width:100%}
 }
+
+
+/* =========================================================
+   HESBAH DASHBOARD 3.0 — sidebar workspace
+   ========================================================= */
+@media(min-width:851px){
+  body{background:#f5f7fb}
+  main#app{width:100%;max-width:none;margin:0;padding:0 32px 50px 300px}
+  main#app>header.dash-header{
+    position:fixed;inset:0 auto 0 0;width:268px;height:100vh;
+    margin:0;padding:24px 16px;display:flex;flex-direction:column;
+    align-items:stretch;justify-content:flex-start;gap:22px;
+    border:0;border-radius:0;background:#101528;
+    box-shadow:12px 0 40px rgba(15,23,42,.10);z-index:100;
+  }
+  .dash-brand{min-width:0;padding:4px 10px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .dash-brand b{font-size:20px}
+  .dash-nav{display:flex;flex-direction:column;align-items:stretch;gap:5px;margin:0}
+  .nav-label{
+    color:#6f7b96;font-size:10px;font-weight:900;
+    padding:12px 14px 6px;text-transform:uppercase;letter-spacing:.7px
+  }
+  .nav-item{
+    display:flex;align-items:center;gap:11px;width:100%;height:46px;
+    padding:0 14px;color:#aeb8cc;background:transparent;border-radius:12px;
+    text-align:right;font-size:14px;font-weight:700;
+  }
+  .nav-item:hover{color:#fff;background:rgba(255,255,255,.06);transform:none}
+  .nav-item.active{
+    color:#fff;background:linear-gradient(90deg,rgba(99,102,241,.28),rgba(99,102,241,.08));
+    box-shadow:inset -3px 0 #7c83ff;
+  }
+  .nav-item i{
+    margin-right:auto;font-style:normal;min-width:22px;height:22px;
+    display:grid;place-items:center;border-radius:999px;color:#fff;
+    background:#ef4444;font-size:11px
+  }
+  .dash-header-actions{margin-top:auto;display:block}
+  .logout-dash{width:100%;height:44px;text-align:right}
+  .dash-header-actions>.ghost:first-child{display:none}
+  .dashboard-welcome{margin-top:25px}
+}
+@media(max-width:850px){
+  main#app{padding:0 12px 30px}
+  main#app>header.dash-header{
+    position:sticky;top:0;z-index:100;
+    margin:0 -12px 16px;border-radius:0 0 18px 18px;
+  }
+  .dash-nav{overflow-x:auto;max-width:100%}
+  .nav-label{display:none}
+  .nav-item{white-space:nowrap}
+  .nav-item span{display:none}
+  .nav-item i{display:none}
+}
