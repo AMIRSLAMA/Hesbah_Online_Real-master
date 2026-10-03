@@ -95,6 +95,7 @@ async function loadOrders(){
     const d=await r.json();
     if(!r.ok||!d.ok) throw Error(d.message||'تعذر تحميل الطلبات');
     const orders=d.orders||[];
+    window.__driverOrders=orders;
     const currentIds=new Set(orders.map(o=>String(o.id)));
     if(driverOrdersInitialized){
       let newCount=0;
@@ -167,7 +168,7 @@ function renderOrder(o){
     (o.status==='out_for_delivery'?
       '<button class="start" onclick="startTracking('+Number(o.id)+')">'+(tracking?'📡 التتبع يعمل':'📡 بدء إرسال موقعي')+'</button>'+
       '<button class="done" onclick="completeOrder('+Number(o.id)+')">✅ تم التوصيل</button>'+
-      '<button class="secondary" onclick="openDriverChat('+Number(o.id)+','+JSON.stringify(String(o.number||''))+')">💬 شات مع العميل</button>'
+      '<button class="secondary" onclick="openDriverChat('+Number(o.id)+')">💬 شات مع العميل</button>'
       :'')+
     (tracking?'<button class="stop" onclick="stopTracking()">⏹️ إيقاف إرسال الموقع</button>':'')+
   '</div>';
@@ -223,9 +224,10 @@ async function refreshDriverChat(){
     if(r.ok&&x.ok)renderDriverChat(Array.isArray(x.messages)?x.messages:[]);
   }catch(e){console.error('driver chat',e)}
 }
-function openDriverChat(orderId,number){
+function openDriverChat(orderId){
   driverChatOrderId=Number(orderId);
-  $('driverChatOrder').textContent=number?'— '+esc(number):'';
+  const order=(window.__driverOrders||[]).find(x=>Number(x.id)===driverChatOrderId);
+  $('driverChatOrder').textContent=order?.number?'— '+esc(order.number):'';
   $('driverChatModal').classList.add('show');
   refreshDriverChat();
   if(driverChatTimer)clearInterval(driverChatTimer);
