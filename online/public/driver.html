@@ -12,7 +12,21 @@ input{border:1px solid #d1d5db}.primary{background:#2563eb;color:#fff}.start{bac
 .status{padding:13px;border-radius:12px;background:#f3f4f6;margin:10px 0;line-height:1.8}.order{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin:10px 0}.order b{display:block;margin-bottom:6px}.muted{color:#6b7280;font-size:13px}.hidden{display:none}.danger{color:#b91c1c}
 </style>
 <link rel="stylesheet" href="/style.css?v=2026-09-28">
-</head>
+<style>
+.driver-chat-modal{position:fixed;inset:0;background:rgba(2,6,23,.65);z-index:100;display:none;align-items:center;justify-content:center;padding:15px}
+.driver-chat-modal.show{display:flex}
+.driver-chat-card{width:min(560px,100%);max-height:90vh;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 70px rgba(2,8,23,.25)}
+.driver-chat-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#0f172a;color:#fff}
+.driver-chat-head button{border:0;background:#334155;color:#fff;border-radius:50%;width:34px;height:34px;font-size:20px}
+.driver-chat-messages{height:330px;overflow:auto;padding:12px;background:#f1f5f9;display:flex;flex-direction:column;gap:8px}
+.driver-chat-msg{max-width:82%;padding:9px 12px;border-radius:14px;line-height:1.5}
+.driver-chat-msg.driver{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:4px}
+.driver-chat-msg.customer{align-self:flex-start;background:#fff;color:#0f172a;border:1px solid #e2e8f0;border-bottom-left-radius:4px}
+.driver-chat-msg small{display:block;opacity:.7;font-size:10px;margin-top:4px}
+.driver-chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #e2e8f0}
+.driver-chat-input input{flex:1;border:1px solid #cbd5e1;border-radius:12px;padding:10px}
+.driver-chat-input button{border:0;border-radius:12px;padding:10px 15px;background:#2563eb;color:#fff;font-weight:900}
+</style></head>
 <body>
 <div class="wrap">
   <div id="loginCard" class="card">
@@ -152,7 +166,8 @@ function renderOrder(o){
     '<div class="muted">الحالة: '+esc(o.status)+'</div>'+
     (o.status==='out_for_delivery'?
       '<button class="start" onclick="startTracking('+Number(o.id)+')">'+(tracking?'📡 التتبع يعمل':'📡 بدء إرسال موقعي')+'</button>'+
-      '<button class="done" onclick="completeOrder('+Number(o.id)+')">✅ تم التوصيل</button>'
+      '<button class="done" onclick="completeOrder('+Number(o.id)+')">✅ تم التوصيل</button>'+
+      '<button class="secondary" onclick="openDriverChat('+Number(o.id)+','+JSON.stringify(String(o.number||''))+')">💬 شات مع العميل</button>'
       :'')+
     (tracking?'<button class="stop" onclick="stopTracking()">⏹️ إيقاف إرسال الموقع</button>':'')+
   '</div>';
@@ -190,7 +205,54 @@ async function completeOrder(orderId){
   }catch(e){alert(e.message)}
 }
 
-function driverLogout(){stopTracking();stopDriverOrderPolling();localStorage.removeItem('hesbah_driver_token');token='';location.reload()}
+let driverChatOrderId=null;
+let driverChatTimer=null;
+function formatDriverChatTime(v){try{return new Date(v).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
+function renderDriverChat(messages){
+  const box=$('driverChatMessages');
+  if(!box)return;
+  if(!messages.length){box.innerHTML='<div style="text-align:center;color:#64748b;padding:30px">لا توجد رسائل بعد.</div>';return}
+  box.innerHTML=messages.map(m=>'<div class="driver-chat-msg '+(m.sender==='driver'?'driver':'customer')+'"><b>'+esc(m.sender==='driver'?'أنت':(m.senderName||'العميل'))+'</b><div>'+esc(m.text)+'</div><small>'+esc(formatDriverChatTime(m.createdAt))+'</small></div>').join('');
+  box.scrollTop=box.scrollHeight;
+}
+async function refreshDriverChat(){
+  if(!token||!driverChatOrderId)return;
+  try{
+    const r=await fetch('/api/public/orders/chat?orderId='+encodeURIComponent(driverChatOrderId),{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+    const x=await r.json();
+    if(r.ok&&x.ok)renderDriverChat(Array.isArray(x.messages)?x.messages:[]);
+  }catch(e){console.error('driver chat',e)}
+}
+function openDriverChat(orderId,number){
+  driverChatOrderId=Number(orderId);
+  $('driverChatOrder').textContent=number?'— '+esc(number):'';
+  $('driverChatModal').classList.add('show');
+  refreshDriverChat();
+  if(driverChatTimer)clearInterval(driverChatTimer);
+  driverChatTimer=setInterval(refreshDriverChat,3000);
+  setTimeout(()=>{$('driverChatInput')?.focus()},100);
+}
+function closeDriverChat(){
+  $('driverChatModal').classList.remove('show');
+  if(driverChatTimer){clearInterval(driverChatTimer);driverChatTimer=null}
+  driverChatOrderId=null;
+}
+async function sendDriverChat(){
+  const input=$('driverChatInput'),btn=$('driverChatSend');
+  if(!input||!driverChatOrderId||!token)return;
+  const text=input.value.trim();
+  if(!text)return;
+  btn.disabled=true;
+  try{
+    const r=await fetch('/api/public/orders/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({orderId:Number(driverChatOrderId),text})});
+    const x=await r.json();
+    if(!r.ok||!x.ok)throw Error(x.message||'تعذر إرسال الرسالة');
+    input.value='';
+    await refreshDriverChat();
+  }catch(e){alert(e.message)}
+  finally{btn.disabled=false;input.focus()}
+}
+function driverLogout(){closeDriverChat();stopTracking();stopDriverOrderPolling();localStorage.removeItem('hesbah_driver_token');token='';location.reload()}
 
 async function legacyCheck(){
   if(!legacyToken)return;
@@ -221,5 +283,11 @@ else if(token){
 }
 </script>
 
-</body>
+<div id="driverChatModal" class="driver-chat-modal" onclick="if(event.target===this)closeDriverChat()">
+  <div class="driver-chat-card">
+    <div class="driver-chat-head"><div>💬 شات مع العميل <span id="driverChatOrder"></span></div><button onclick="closeDriverChat()">×</button></div>
+    <div id="driverChatMessages" class="driver-chat-messages"><div style="text-align:center;color:#64748b;padding:30px">جاري تحميل المحادثة...</div></div>
+    <div class="driver-chat-input"><input id="driverChatInput" maxlength="1000" placeholder="اكتب رسالة للعميل..."><button id="driverChatSend" onclick="sendDriverChat()">إرسال</button></div>
+  </div>
+</div></body>
 </html>
