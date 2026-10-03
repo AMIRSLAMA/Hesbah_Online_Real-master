@@ -1,5 +1,15 @@
 ﻿(() => {
 const $ = s => document.querySelector(s);
+window.dashGo=function(id,btn){
+  const el=id==="home"?document.querySelector(".dashboard-welcome"):document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+  document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+};
+function updateSideOrderCount(n){
+  const el=document.getElementById("sideOrderCount");
+  if(el) el.textContent=String(Number(n||0));
+}
 const $$ = s => [...document.querySelectorAll(s)];
 const KEY = "amircasher_db_v1";
 
