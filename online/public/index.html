@@ -75,11 +75,15 @@
           <small id="shop"></small>
         </div>
       </div>
-      <nav class="dash-nav" aria-label="التنقل السريع">
-        <button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">الرئيسية</button>
-        <button type="button" onclick="document.querySelector('.orders-section')?.scrollIntoView({behavior:'smooth'})">الطلبات</button>
-        <button type="button" onclick="document.querySelector('.card')?.scrollIntoView({behavior:'smooth'})">التشغيل</button>
-        <button type="button" onclick="document.getElementById('paymentSettingsSection')?.scrollIntoView({behavior:'smooth'})">الإعدادات</button>
+      <nav class="dash-nav" aria-label="التنقل الرئيسي">
+        <div class="nav-label">القائمة الرئيسية</div>
+        <button class="nav-item active" type="button" onclick="dashGo('home',this)">⌂ <span>الرئيسية</span></button>
+        <button class="nav-item" type="button" onclick="dashGo('ordersSection',this)">🛒 <span>الطلبات</span><i id="sideOrderCount">0</i></button>
+        <button class="nav-item" type="button" onclick="dashGo('driversSection',this)">🛵 <span>المندوبين</span></button>
+        <button class="nav-item" type="button" onclick="dashGo('productsSection',this)">📦 <span>المخزون</span></button>
+        <div class="nav-label">الإدارة</div>
+        <button class="nav-item" type="button" onclick="dashGo('paymentSettingsSection',this)">💳 <span>الدفع والتوصيل</span></button>
+        <button class="nav-item" type="button" onclick="dashGo('invoicesSection',this)">🧾 <span>الفواتير</span></button>
       </nav>
       <div class="dash-header-actions">
 <button
@@ -89,7 +93,7 @@
       </button>
 
 
-      <button class="ghost" onclick="logout()">خروج</button>
+      <button class="ghost logout-dash" onclick="logout()">↪ خروج</button>
       </div>
     </header>
 
@@ -194,7 +198,7 @@
       </div>
     </section>
 
-    <section class="card orders-section">
+    <section class="card orders-section" id="ordersSection">
 
       <div class="toolbar">
 
@@ -220,7 +224,7 @@
 
 
     <!-- Drivers -->
-    <section class="card">
+    <section class="card" id="driversSection">
       <div class="toolbar">
         <h2>🛵 إدارة المندوبين</h2>
         <button onclick="loadDrivers()">تحديث</button>
@@ -237,7 +241,7 @@
 
     <!-- Products -->
 
-    <section class="card">
+    <section class="card" id="productsSection">
 
       <div class="toolbar">
 
@@ -428,7 +432,7 @@
 
     <!-- Invoices -->
 
-    <section class="card">
+    <section class="card" id="invoicesSection">
 
       <div class="toolbar">
 
