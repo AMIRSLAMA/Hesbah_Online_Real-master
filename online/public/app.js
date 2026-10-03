@@ -509,7 +509,7 @@ async function loadPaymentSettingsPOS(){
     if(db.paymentSettings) p={...p,...db.paymentSettings};
     if(db.online?.url){
       try{
-        const d=await onlineFetch("/api/public/payment-methods");
+        const d=await onlineFetch(`/api/public/payment-methods?storeId=${encodeURIComponent(db.online?.storeId||"demo")}`);
         if(d?.payment) p=d.payment;
       }catch(_){}
     }
@@ -592,7 +592,7 @@ async function savePaymentSettingsPOS(){
       // Keep the authoritative server response locally so reopening the settings
       // screen cannot replace the newly saved delivery fee with an old value.
       try{
-        const fresh=await onlineFetch("/api/public/payment-methods");
+        const fresh=await onlineFetch(`/api/public/payment-methods?storeId=${encodeURIComponent(db.online?.storeId||"demo")}`);
         if(fresh?.payment){
           db.paymentSettings=fresh.payment;
           save();
