@@ -113,6 +113,12 @@ const DEMO={
       name:'Visa / Mastercard',
       provider:'',
       publicKey:''
+    },
+
+    delivery:{
+      enabled:true,
+      name:'رسوم التوصيل',
+      fee:0
     }
   }
 };
@@ -239,9 +245,15 @@ const customer={
     }
   }
 
-  const total=items.reduce(
+  const subtotal=items.reduce(
     (sum,x)=>sum+(x.price*x.qty),0
   );
+
+  const deliverySettings=db.paymentSettings?.delivery||DEMO.paymentSettings.delivery;
+  const deliveryFee=String(b.type||'delivery')==='delivery' && deliverySettings?.enabled!==false
+    ? Math.max(0,Number(deliverySettings?.fee||0))
+    : 0;
+  const total=subtotal+deliveryFee;
 
 const order={
   id:Date.now(),
@@ -296,6 +308,8 @@ addItemsUntil:Date.now() + (3 * 60 * 1000),
 
   items,
 
+  subtotal,
+  deliveryFee,
   total,
 
   paymentMethod:String(
@@ -333,6 +347,8 @@ return json(res,201,{
     id:order.id,
     number:order.number,
     status:order.status,
+    subtotal:order.subtotal,
+    deliveryFee:order.deliveryFee,
     total:order.total,
     createdAt:order.createdAt,
     addItemsUntil:order.addItemsUntil,
@@ -520,7 +536,7 @@ if(p==='/api/public/orders/add-items'&&req.method==='POST'){
     addedTotal += price*qty;
   }
 
-  order.total=
+  order.subtotal=
     order.items.reduce(
       (sum,item)=>
         sum+
@@ -528,6 +544,9 @@ if(p==='/api/public/orders/add-items'&&req.method==='POST'){
         (Number(item.qty)||0),
       0
     );
+
+  order.deliveryFee=Math.max(0,Number(order.deliveryFee||0));
+  order.total=order.subtotal+order.deliveryFee;
 
   const customer=Array.isArray(db.customers)
     ? db.customers.find(
@@ -835,6 +854,8 @@ if(p==='/api/public/orders/status'&&req.method==='GET'){
       number:order.number,
       status:order.status||'new',
       statusUpdatedAt:order.statusUpdatedAt||order.createdAt,
+      subtotal:Number(order.subtotal||Math.max(0,Number(order.total||0)-Number(order.deliveryFee||0))),
+      deliveryFee:Number(order.deliveryFee||0),
       total:Number(order.total||0),
       createdAt:order.createdAt,
       driverLocation:location,
@@ -1064,7 +1085,19 @@ if(p==='/api/public/payment-methods'&&req.method==='GET'){
       name:'Visa / Mastercard',
       provider:'',
       publicKey:''
+    },
+
+    delivery:{
+      enabled:true,
+      name:'رسوم التوصيل',
+      fee:0
     }
+  };
+
+  payment.delivery={
+    enabled:payment.delivery?.enabled!==false,
+    name:String(payment.delivery?.name||'رسوم التوصيل'),
+    fee:Math.max(0,Number(payment.delivery?.fee||0))
   };
 
   return json(res,200,{
@@ -1100,9 +1133,11 @@ if(p==='/api/public/products'&&req.method==='GET'){
   });
 }
 if(p==='/api/payment-settings'&&req.method==='PUT'){
+  const a=auth(req);
+  if(!a)return json(res,401,{ok:false,message:'انتهت الجلسة أو التوكن غير صالح'});
+  if(a.role!=='مدير')return json(res,403,{ok:false,message:'تعديل إعدادات الدفع والتوصيل للمدير فقط'});
+  const b=await body(req);
   const db=load(a.storeId);
-
-  const current=db.paymentSettings||{};
 
   db.paymentSettings={
     cash:{
@@ -1173,6 +1208,14 @@ if(p==='/api/payment-settings'&&req.method==='PUT'){
       publicKey:String(
         b.card?.publicKey||''
       ).trim()
+    },
+
+    delivery:{
+      enabled:b.delivery?.enabled!==false,
+      name:String(
+        b.delivery?.name||'رسوم التوصيل'
+      ).trim() || 'رسوم التوصيل',
+      fee:Math.max(0,Number(b.delivery?.fee||0))
     }
   };
 
@@ -1192,6 +1235,8 @@ const a=auth(req);if(!a)return json(res,401,{ok:false,message:'انتهت الج
 // Orders and delivery drivers are created/updated by the web/customer side and must remain server-authoritative.
 incoming.orders=Array.isArray(db.orders)?db.orders:[];
 incoming.drivers=Array.isArray(db.drivers)?db.drivers:[];
+// Payment and delivery settings are server-owned.
+incoming.paymentSettings=db.paymentSettings||incoming.paymentSettings||DEMO.paymentSettings;
 incoming.storeId=a.storeId;
 incoming.revision=(db.revision||1)+1;for(const u of incomingUsers){if(String(u.role||'').trim()!=='مندوب توصيل')continue;const id=Number(u.id||0);if(!id)continue;let d=incoming.drivers.find(x=>Number(x.userId||0)===id);if(!d){d={id,userId:id,name:String(u.name||'مندوب'),username:String(u.username||''),phone:String(u.phone||''),passwordHash:u.password?hash(String(u.password)):String(u.passwordHash||''),active:true,createdAt:new Date().toISOString()};incoming.drivers.push(d);}else{d.name=String(u.name||d.name||'مندوب');d.username=String(u.username||d.username||'');d.phone=String(u.phone||d.phone||'');if(u.password)d.passwordHash=hash(String(u.password));d.active=true;}}save(a.storeId,incoming);return json(res,200,{ok:true,revision:incoming.revision})}
  if(p==='/api/products'&&req.method==='GET')return json(res,200,{ok:true,revision:db.revision||1,products:db.products||[]});
