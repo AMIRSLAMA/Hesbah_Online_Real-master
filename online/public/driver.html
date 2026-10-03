@@ -182,27 +182,61 @@ function renderOrder(o){
   '</div>';
 }
 
+let gpsErrorShown=false;
+function gpsErrorMessage(e){
+  if(e?.code===1) return 'تم رفض صلاحية الموقع. افتح إعدادات الموقع في الهاتف، ثم اسمح للمتصفح باستخدام الموقع لهذا الموقع.';
+  if(e?.code===2) return 'تعذر تحديد موقع GPS. تأكد أن GPS/الموقع مفتوح وأنك في مكان يمكن للهاتف استقبال الموقع فيه.';
+  if(e?.code===3) return 'انتهت مهلة قراءة GPS. اترك الموقع مفتوحاً وحاول مرة أخرى.';
+  return e?.message||'تعذر قراءة GPS';
+}
+
 function startTracking(orderId){
-  if(!navigator.geolocation){alert('هذا الجهاز لا يدعم GPS');return}
-  activeOrderId=Number(orderId);loadOrders();
+  if(!navigator.geolocation){alert('هذا الجهاز أو المتصفح لا يدعم GPS');return}
+  if(location.protocol!=='https:' && location.hostname!=='localhost' && location.hostname!=='127.0.0.1'){
+    alert('التتبع يحتاج اتصال HTTPS. افتح رابط Hesbah الذي يبدأ بـ https://');
+    return;
+  }
+  activeOrderId=Number(orderId);gpsErrorShown=false;loadOrders();
   if(watchId!==null) navigator.geolocation.clearWatch(watchId);
-  watchId=navigator.geolocation.watchPosition(sendLocation,e=>alert('تعذر قراءة GPS: '+e.message),{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+
+  navigator.geolocation.getCurrentPosition(
+    pos=>sendLocation(pos),
+    e=>{
+      if(!gpsErrorShown){gpsErrorShown=true;alert('تعذر تشغيل GPS: '+gpsErrorMessage(e))}
+      loadOrders();
+    },
+    {enableHighAccuracy:true,maximumAge:0,timeout:20000}
+  );
+
+  watchId=navigator.geolocation.watchPosition(
+    sendLocation,
+    e=>{
+      console.error('GPS watch error',e);
+      if(!gpsErrorShown){gpsErrorShown=true;alert('توقف GPS: '+gpsErrorMessage(e))}
+    },
+    {enableHighAccuracy:true,maximumAge:5000,timeout:20000}
+  );
 }
 
 async function sendLocation(pos){
   if(!activeOrderId)return;
+  const lat=Number(pos?.coords?.latitude),lng=Number(pos?.coords?.longitude);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
   try{
     const r=await fetch('/api/public/driver/location-account',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({
-      orderId:activeOrderId,lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy
-    })});
+      orderId:activeOrderId,lat,lng,accuracy:Number(pos.coords.accuracy||0)
+    }),cache:'no-store'});
     const d=await r.json();
-    if(!r.ok||!d.ok) throw Error(d.message||'تعذر إرسال الموقع');
-  }catch(e){console.error(e)}
+    if(!r.ok||!d.ok) throw Error(d.message||('تعذر إرسال الموقع (HTTP '+r.status+')'));
+    console.log('Hesbah GPS sent',d.location);
+  }catch(e){
+    console.error('send GPS',e);
+  }
 }
 
 function stopTracking(){
   if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}
-  activeOrderId=null;loadOrders();
+  activeOrderId=null;gpsErrorShown=false;loadOrders();
 }
 
 async function completeOrder(orderId){
