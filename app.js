@@ -69,10 +69,13 @@ function mergeOnlineData(remote){
   const keepOnline={...(db.online||{})};
   const r=remote&&typeof remote==="object"?remote:{};
   const mergeArray=(localArr,remoteArr,key)=>{
+    // Server data is authoritative for records that already exist there.
+    // Keep local-only records so newly created POS products/customers are uploaded normally.
     const out=Array.isArray(remoteArr)?remoteArr.map(x=>({...x})):[];
+    const remoteKeys=new Set(out.map(x=>key(x)));
     for(const item of (Array.isArray(localArr)?localArr:[])){
-      const idx=out.findIndex(x=>key(x)===key(item));
-      if(idx>=0) out[idx]={...out[idx],...item}; else out.push({...item});
+      const k=key(item);
+      if(!remoteKeys.has(k)){out.push({...item});remoteKeys.add(k);}
     }
     return out;
   };
