@@ -618,7 +618,7 @@ window.saveActivation=async()=>{if(!isManager())return denySeller();const code=$
 window.backup=async()=>{if(!isManager())return denySeller();const r=await window.amir.saveBackup(JSON.stringify(db,null,2));if(!r.canceled)toast("تم إنشاء النسخة الاحتياطية")};
 window.restore=async()=>{if(!isManager())return denySeller();const r=await window.amir.restoreBackup();if(r.canceled)return;try{db=JSON.parse(r.content);save();toast("تم الاسترجاع بنجاح");setTimeout(()=>location.reload(),500)}catch{toast("ملف النسخة الاحتياطية غير صالح")}};
 
-Object.defineProperty(window,"hesbahDB",{configurable:true,get:function(){return db}});window.hesbahSave=save;window.hesbahToast=toast;window.hesbahEscape=escape;window.hesbahMoney=money;window.hesbahOpenModal=openModal;window.hesbahIsManager=isManager;window.hesbahDenySeller=denySeller;window.hesbahOnlineRequest=onlineFetch;
+Object.defineProperty(window,"hesbahDB",{configurable:true,get:function(){return db}});window.hesbahSave=save;window.savePaymentSettingsPOS=savePaymentSettingsPOS;window.hesbahToast=toast;window.hesbahEscape=escape;window.hesbahMoney=money;window.hesbahOpenModal=openModal;window.hesbahIsManager=isManager;window.hesbahDenySeller=denySeller;window.hesbahOnlineRequest=onlineFetch;
 const originalRoute=route;
 ensureDatabase();
 refreshBrandLogo();
