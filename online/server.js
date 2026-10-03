@@ -1248,6 +1248,11 @@ if(p==='/api/payment-settings'&&req.method==='PUT'){
 const a=auth(req);if(!a)return json(res,401,{ok:false,message:'انتهت الجلسة أو التوكن غير صالح'});const db=load(a.storeId);
  if(p==='/api/bootstrap'&&req.method==='GET')return json(res,200,{ok:true,storeId:a.storeId,revision:db.revision||1,db:{...db,users:db.users.map(safeUser)}});
  if(p==='/api/sync'&&req.method==='POST'){const b=await body(req);const rev=Number(b.revision||0);if(rev && rev!==(db.revision||1))return json(res,409,{ok:false,conflict:true,revision:db.revision||1,db});const incoming=b.db;if(!incoming||typeof incoming!=='object')return json(res,400,{ok:false,message:'بيانات المزامنة غير صالحة'});if(!Array.isArray(db.users))db.users=[];const incomingUsers=Array.isArray(incoming.users)?incoming.users:[];for(const u of incomingUsers){const id=Number(u.id||0);const username=String(u.username||'').trim();if(!id||!username)continue;let existing=db.users.find(x=>Number(x.id)===id);if(!existing)existing=db.users.find(x=>String(x.username||'').toLowerCase()===username.toLowerCase());if(existing){existing.name=String(u.name||existing.name||'');existing.username=username;existing.role=String(u.role||existing.role||'بائع');existing.phone=String(u.phone||existing.phone||'');if(u.password)existing.passwordHash=hash(String(u.password));}else{db.users.push({id,name:String(u.name||''),username,phone:String(u.phone||''),role:String(u.role||'بائع'),passwordHash:u.password?hash(String(u.password)):String(u.passwordHash||'')});}}incoming.users=db.users;
+// Categories are shared data. Merge them instead of letting an older POS category list overwrite server categories.
+const serverCategories=Array.isArray(db.categories)?db.categories:[];
+const incomingCategories=Array.isArray(incoming.categories)?incoming.categories:[];
+incoming.categories=[...new Set([...serverCategories,...incomingCategories].map(c=>String(c||"").trim()).filter(Boolean))];
+if(!incoming.categories.length)incoming.categories=["عام"];
 // Online-owned data must never be lost when a POS syncs its local database.
 // Orders and delivery drivers are created/updated by the web/customer side and must remain server-authoritative.
 incoming.orders=Array.isArray(db.orders)?db.orders:[];
