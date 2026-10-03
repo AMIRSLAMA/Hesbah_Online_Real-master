@@ -1044,6 +1044,14 @@ if(p==='/api/public/payment-methods'&&req.method==='GET'){
 
   const db=load(storeId);
 
+  // Keep legacy stores compatible with delivery-fee settings.
+  if(!db.paymentSettings || typeof db.paymentSettings!=='object') db.paymentSettings={};
+  if(!db.paymentSettings.delivery || typeof db.paymentSettings.delivery!=='object'){
+    db.paymentSettings.delivery={enabled:true,name:'رسوم التوصيل',fee:35};
+    db.revision=(db.revision||1)+1;
+    save(storeId,db);
+  }
+
   const payment=db.paymentSettings||{
     cash:{
       enabled:true,
