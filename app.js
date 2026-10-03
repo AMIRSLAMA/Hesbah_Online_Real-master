@@ -175,6 +175,36 @@ async function syncOnline(show=true){
 }
 function applyOnlineDb(remote){const keepOnline=db.online;db={...remote,online:keepOnline};ensureDatabase();refreshBrandLogo()}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
+async function checkHesbahUpdate(showToast){
+  if(!window.amir?.checkForUpdates){ if(showToast)toast("التحديث غير متاح في وضع التشغيل الحالي"); return; }
+  const box=$("#updateStatusBox");
+  if(box)box.textContent="🔎 جاري البحث عن تحديث...";
+  const r=await window.amir.checkForUpdates();
+  if(r?.dev){if(box)box.textContent="ℹ️ التحديث يعمل بعد تثبيت نسخة Hesbah.";if(showToast)toast("ثبّت نسخة Hesbah أولًا لاختبار التحديث");return}
+  if(!r?.ok && r?.error){if(box)box.textContent="❌ "+r.error;if(showToast)toast("تعذر فحص التحديث");return}
+  if(r?.available){if(box)box.textContent="⬇️ يوجد تحديث، جاري تنزيله...";return}
+  if(box)box.textContent="✅ لا يوجد تحديث أحدث حاليًا.";
+  if(showToast)toast("البرنامج محدث بالفعل");
+}
+async function installHesbahUpdate(){
+  if(!window.amir?.installUpdate)return;
+  const ok=confirm("تم تنزيل التحديث. سيتم إغلاق Hesbah وإعادة تشغيله تلقائيًا. هل تريد المتابعة؟");
+  if(!ok)return;
+  await window.amir.installUpdate();
+}
+if(window.amir?.onUpdateStatus){
+  window.amir.onUpdateStatus(function(data){
+    const box=$("#updateStatusBox");
+    const btn=$("#installUpdateBtn");
+    if(box)box.textContent=data?.message||"";
+    if(btn)btn.disabled=data?.state!=="downloaded";
+    if(data?.state==="downloaded"){
+      toast("تم تنزيل تحديث Hesbah — جاهز لإعادة التشغيل");
+      if(confirm("تم تنزيل تحديث جديد. هل تريد إغلاق Hesbah وتثبيت التحديث الآن؟")) installHesbahUpdate();
+    }
+  });
+}
+
 function money(n){return Number(n||0).toFixed(2)+" ج.م"}
 function logoSrc(){return db.shop.logo||"assets/logo.svg"}
 function embeddedDefaultLogo(){return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="220" height="100"><rect width="100%" height="100%" rx="18" fill="#f97316"/><text x="110" y="62" text-anchor="middle" font-family="Arial" font-size="48" font-weight="bold" fill="white">A</text></svg>`)}
@@ -573,7 +603,7 @@ window.printQRMenu=async()=>{
 };
 function renderSettings(){
  $("#content").innerHTML=`<div class="page-head"><div><h1>الإعدادات</h1><p>إدارة بيانات المحل والطباعة والنسخ الاحتياطي والتفعيل</p></div></div>
- <div class="tabs" id="settingsTabs"><button class="tab active" data-tab="shop">بيانات المحل</button><button class="tab" data-tab="printer">الطباعة ودرج النقدية</button><button class="tab" data-tab="backup">النسخ الاحتياطي</button><button class="tab" data-tab="online">Hesbah Online</button><button class="tab" data-tab="payment">💳 طرق الدفع</button><button class="tab" data-tab="activation">التفعيل</button></div><div id="settingsPanel"></div>`;
+ <div class="tabs" id="settingsTabs"><button class="tab active" data-tab="shop">بيانات المحل</button><button class="tab" data-tab="printer">الطباعة ودرج النقدية</button><button class="tab" data-tab="backup">النسخ الاحتياطي</button><button class="tab" data-tab="online">Hesbah Online</button><button class="tab" data-tab="payment">💳 طرق الدفع</button><button class="tab" data-tab="update">🔄 تحديث البرنامج</button><button class="tab" data-tab="activation">التفعيل</button></div><div id="settingsPanel"></div>`;
  $("#settingsTabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(!b)return;$$(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");settingsPanel(b.dataset.tab)};
  settingsPanel("shop");
 }
@@ -583,6 +613,7 @@ function settingsPanel(tab){
  if(tab==="printer")p.innerHTML=`<div class="card"><h2>الطباعة ودرج النقدية</h2><div class="grid g2"><label>الطابعة<input id="printerName" value="${escape(db.printer.printer)}"></label><label>عدد نسخ الفاتورة<select id="copies"><option ${db.printer.copies===1?"selected":""}>1</option><option ${db.printer.copies===2?"selected":""}>2</option><option ${db.printer.copies===3?"selected":""}>3</option></select></label></div><label>فتح درج النقدية مع الطباعة <select id="drawer"><option value="0" ${!db.printer.drawer?"selected":""}>لا</option><option value="1" ${db.printer.drawer?"selected":""}>نعم</option></select></label><label>طباعة تذكرة تجهيز الطلب <select id="prep"><option value="0" ${!db.printer.prep?"selected":""}>لا</option><option value="1" ${db.printer.prep?"selected":""}>نعم</option></select></label><p class="muted">بعد الضغط على طباعة ستظهر نافذة طباعة Windows لاختيار الطابعة. دعم درج النقدية الحقيقي يعتمد على تعريف ESC/POS الخاص بالطابعة.</p><div class="form-actions"><button class="primary" onclick="savePrinter()">حفظ إعدادات الطباعة</button></div></div>`;
  if(tab==="backup")p.innerHTML=`<div class="card"><h2>النسخ الاحتياطي</h2><p class="muted">احفظ نسخة كاملة من المنتجات والفواتير والعملاء والمستخدمين والإعدادات على جهازك.</p><div class="actions"><button class="primary" onclick="backup()">إنشاء نسخة احتياطية</button><button class="secondary" onclick="restore()">استرجاع نسخة احتياطية</button></div><hr style="border:0;border-top:1px solid var(--line);margin:22px 0"><p><b>نصيحة:</b> احتفظ بنسخة على فلاشة أو قرص خارجي.</p></div>`;
  if(tab==="online")p.innerHTML=`<div class="card"><h2>Hesbah Online</h2><p class="muted">اربط برنامج الكاشير بحساب Hesbah Online لمزامنة البيانات بين الأجهزة.</p><div class="grid g2"><label>عنوان السيرفر<input id="onlineUrl" value="${escape(db.online?.url||"")}" placeholder="مثال: http://192.168.1.10:8080"></label><label>كود المتجر<input id="onlineStoreId" value="${escape(db.online?.storeId||"demo")}" placeholder="demo"></label></div><label>المزامنة التلقائية <select id="onlineAuto"><option value="0" ${!db.online?.autoSync?"selected":""}>لا</option><option value="1" ${db.online?.autoSync?"selected":""}>نعم</option></select></label><div class="form-actions"><button class="primary" onclick="saveOnlineSettings()">حفظ الإعدادات</button><button class="secondary" onclick="connectOnlineNow()">اختبار الاتصال والربط</button><button class="secondary" onclick="syncOnline(true)">مزامنة الآن</button></div><div id="onlineStatus" class="muted" style="margin-top:14px"></div></div>`;
+ if(tab==="update")p.innerHTML=`<div class="card"><h2>🔄 تحديث Hesbah</h2><p class="muted">حدّث نسخة Windows من GitHub بدون إعادة تثبيت البرنامج يدويًا. بيانات الكاشير المحلية وبيانات السيرفر لا يتم حذفها أثناء التحديث.</p><div class="actions"><button class="primary" type="button" onclick="checkHesbahUpdate(true)">🔄 فحص التحديثات</button><button class="secondary" type="button" onclick="installHesbahUpdate()" id="installUpdateBtn" disabled>⬆️ تثبيت وإعادة تشغيل</button></div><div id="updateStatusBox" class="muted" style="margin-top:14px">اضغط فحص التحديثات للبدء.</div></div>`;
  if(tab==="payment")p.innerHTML=`<div class="card"><h2>💳 طرق الدفع</h2><p class="muted">حدد طرق الدفع التي تظهر للعميل في صفحة الطلب. يمكنك تشغيل أو إيقاف أي طريقة وتسجيل بياناتها.</p><div class="grid g2">
  <div><label><input type="checkbox" id="posPayCashEnabled"> 💵 كاش عند الاستلام</label><input id="posPayCashName" placeholder="اسم طريقة الدفع"></div>
  <div><label><input type="checkbox" id="posPayVodafoneEnabled"> 📱 Vodafone Cash</label><input id="posPayVodafoneName" placeholder="اسم طريقة الدفع"><input id="posPayVodafoneNumber" placeholder="رقم Vodafone Cash"></div>
