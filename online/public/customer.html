@@ -100,9 +100,17 @@ function goHome(){stopTracking();$('homePage').style.display='block';$('orderPag
 function startNewOrder(){stopTracking();window.pendingOrderData=null;window.checkoutCustomerLocation=null;cart=[];const home=$('homePage'),page=$('orderPage');$('cartModal').classList.add('hidden');$('modalTitle').textContent='سلة المشتريات';$('cartItems').innerHTML='';$('cartTotal').innerHTML='';$('checkoutBtn').classList.remove('hidden');$('checkoutBtn').disabled=true;updateCart();home.style.display='none';page.style.display='block';page.classList.add('active');$('products').innerHTML='<div class="empty">جاري تحميل المنتجات...</div>';loadProducts();page.scrollIntoView({behavior:'smooth',block:'start'});}
 async function loadProducts(){const box=$('products');box.innerHTML='<div class="empty">جاري تحميل المنتجات...</div>';try{const r=await fetch('/api/public/products?storeId='+encodeURIComponent(STORE_ID)+'&_='+Date.now(),{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.message||'تعذر تحميل المنتجات');products=Array.isArray(d.products)?d.products:[];categories=Array.isArray(d.categories)&&d.categories.length?d.categories:['عام'];activeCategory='الكل';renderCategoryTabs();renderProducts()}catch(e){console.error(e);box.innerHTML='<div class="empty">تعذر تحميل المنتجات. حاول مرة أخرى.</div>';$('customerCategories').innerHTML=''}}
 
-function renderCategoryTabs(){const box=$('customerCategories');if(!box)return;const cats=['الكل',...categories.filter(c=>String(c).trim()&&String(c).trim()!=='الكل')];box.innerHTML=cats.map(c=>'<button type="button" class="category-tab '+(c===activeCategory?'active':'')+'" onclick="selectCustomerCategory('+JSON.stringify(c)+')">'+esc(c)+'</button>').join('');}
-
+function renderCategoryTabs(){const box=$('customerCategories');if(!box)return;const cats=['الكل',...categories.filter(c=>String(c).trim()&&String(c).trim()!=='الكل')];box.innerHTML=cats.map(c=>'<button type="button" class="category-tab '+(c===activeCategory?'active':'')+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join('');}
 function selectCustomerCategory(cat){activeCategory=String(cat||'الكل');renderCategoryTabs();renderProducts();}
+if(!window.__hesbahCustomerCategoryHandler){
+  window.__hesbahCustomerCategoryHandler=true;
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest('#customerCategories .category-tab');
+    if(!btn)return;
+    e.preventDefault();
+    selectCustomerCategory(btn.getAttribute('data-category')||'الكل');
+  });
+}
 
 function renderProducts(){const box=$('products');const visible=activeCategory==='الكل'?products:products.filter(p=>String(p.category||'عام')===activeCategory);if(!products.length){box.innerHTML='<div class="empty">لا توجد منتجات حالياً</div>';return}if(!visible.length){box.innerHTML='<div class="empty">لا توجد منتجات في تصنيف '+esc(activeCategory)+'</div>';return}box.innerHTML=visible.map(p=>{const ok=p.available===true;return '<article class="product">'+(!ok?'<span class="badge" style="position:absolute;margin:10px">غير متاح</span>':'')+'<div class="product-img">'+(p.image?'<img src="'+esc(p.image)+'" alt="'+esc(p.name)+'">':'<div class="placeholder">📦</div>')+'</div><div class="product-body"><div class="product-name">'+esc(p.name)+'</div><div class="price">'+Number(p.price||0).toFixed(2)+' جنيه</div><div class="unit">'+esc(p.unit||'قطعة')+'</div><button class="add" '+(!ok?'disabled':'')+' onclick="addToCart('+Number(p.id)+')">'+(ok?'إضافة للسلة':'غير متاح')+'</button></div></article>'}).join('')}
 
