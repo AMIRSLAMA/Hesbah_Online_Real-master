@@ -18,7 +18,19 @@
 .order-page{display:none}.order-page.active{display:block}.order-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.order-toolbar h2{margin:0}.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}.product{background:#fff;border:1px solid #e2e8f0;border-radius:22px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,.08)}.product-img{height:155px;background:linear-gradient(135deg,#e0f2fe,#eef2ff);display:grid;place-items:center;overflow:hidden}.product-img img{width:100%;height:100%;object-fit:cover}.placeholder{font-size:55px}.product-body{padding:15px}.product-name{font-size:18px;font-weight:900}.price{color:#2563eb;font-size:18px;font-weight:900;margin:7px 0}.unit{color:var(--muted);font-size:12px;margin-bottom:12px}.add{width:100%;border:0;color:#fff;background:linear-gradient(135deg,#2563eb,#06b6d4);padding:11px;border-radius:12px;font-weight:900}.add:disabled{background:#94a3b8}.cartbar{position:sticky;bottom:12px;z-index:20;margin-top:20px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:18px;background:rgba(15,23,42,.94);color:#fff;box-shadow:0 15px 40px rgba(15,23,42,.25)}.cartbar .btn{padding:10px 15px}.cart-count{font-weight:900}.modal{position:fixed;inset:0;background:rgba(2,6,23,.65);z-index:100;display:grid;place-items:center;padding:15px}.modal-card{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px;padding:20px;box-shadow:var(--shadow)}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.close{width:38px;height:38px;border:0;border-radius:50%;background:#e2e8f0;font-size:22px}.cart-item{display:flex;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid #e5e7eb}.qty{display:flex;align-items:center;gap:8px}.qty button{width:30px;height:30px;border:0;border-radius:8px;background:#e2e8f0;font-weight:900}.total{display:flex;justify-content:space-between;font-size:19px;font-weight:900;padding:16px 0}.tracking{margin-top:15px;padding:16px;border-radius:18px;background:#f8fafc;border:1px solid #e2e8f0}.step{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;background:#e2e8f0;color:#64748b;margin:7px 0}.step.done{background:#dcfce7;color:#166534}.step.active{background:#dbeafe;color:#1d4ed8;font-weight:900}.map{height:260px;border-radius:14px;margin-top:12px;display:none;overflow:hidden}.footer{text-align:center;color:#64748b;padding:28px}.back-btn{min-width:95px}
 @media(max-width:650px){.container{padding:13px}.dashboard-actions{grid-template-columns:1fr}.products{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.product-img{height:115px}.product-body{padding:10px}.product-name{font-size:15px}.price{font-size:15px}.top-inner{padding:0 2px}.user-name{display:none}.hero{padding:21px}.hero h1{font-size:23px}.action-card{padding:17px}.action-icon{width:48px;height:48px;font-size:23px}}
 </style>
-</head>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><style>
+.chat-box{margin-top:14px;border:1px solid #e2e8f0;border-radius:18px;background:#fff;overflow:hidden;text-align:right}
+.chat-head{padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:900}
+.chat-messages{height:220px;overflow:auto;padding:12px;background:#f1f5f9;display:flex;flex-direction:column;gap:8px}
+.chat-msg{max-width:82%;padding:9px 12px;border-radius:14px;line-height:1.5}
+.chat-msg.customer{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:4px}
+.chat-msg.driver{align-self:flex-start;background:#fff;color:#0f172a;border:1px solid #e2e8f0;border-bottom-left-radius:4px}
+.chat-msg small{display:block;opacity:.7;font-size:10px;margin-top:4px}
+.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #e2e8f0}
+.chat-input input{flex:1;border:1px solid #cbd5e1;border-radius:12px;padding:10px;outline:0}
+.chat-input button{border:0;border-radius:12px;padding:10px 14px;background:#2563eb;color:#fff;font-weight:900}
+.map{height:280px;border-radius:14px;margin-top:12px;overflow:hidden;border:1px solid #e2e8f0}
+</style></head>
 <body>
 <div id="authPage" class="auth">
   <div class="auth-card">
@@ -88,11 +100,104 @@ async function captureCustomerLocation(){if(!navigator.geolocation)return null;r
 async function checkout(){if(!cart.length)return alert('السلة فارغة');const address=customer?.address||'';const building=customer?.building||'';const floor=customer?.floor||'';const apartment=customer?.apartment||'';const location=await captureCustomerLocation();window.checkoutCustomerLocation=location;let total=cart.reduce((a,x)=>a+Number(x.price)*Number(x.qty),0);$('modalTitle').textContent='بيانات التوصيل';$('cartItems').innerHTML='<div class="field"><label>العنوان</label><input id="orderAddress" value="'+esc(address)+'" placeholder="العنوان بالتفصيل"></div><div class="field"><label>المبنى</label><input id="orderBuilding" value="'+esc(building)+'" placeholder="رقم المبنى"></div><div class="field"><label>الدور</label><input id="orderFloor" value="'+esc(floor)+'" placeholder="رقم الدور"></div><div class="field"><label>الشقة</label><input id="orderApartment" value="'+esc(apartment)+'" placeholder="رقم الشقة"></div><div class="field"><label>ملاحظات الطلب</label><input id="orderNotes" placeholder="أي ملاحظات إضافية"></div><div id="locationStatus" style="margin:10px 0;padding:12px;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-weight:800">📍 جاري التحقق من موقعك...</div><div class="total"><span>الإجمالي</span><span>'+total.toFixed(2)+' جنيه</span></div><button class="btn primary wide" onclick="loadPaymentMethods()">متابعة واختيار طريقة الدفع</button>';const ls=$('locationStatus');if(ls)ls.textContent=location?'📍 تم تحديد موقعك تلقائياً وسيتم إرساله مع الطلب.':'📍 لم يتم تحديد الموقع تلقائياً. اسمح للموقع من المتصفح إذا أردت إرسال موقعك مع الطلب.';$('cartTotal').innerHTML='';$('checkoutBtn').classList.add('hidden')}
 async function loadPaymentMethods(){const address=$('orderAddress').value.trim(),building=$('orderBuilding').value.trim(),floor=$('orderFloor').value.trim(),apartment=$('orderApartment').value.trim(),notes=$('orderNotes').value.trim();if(!address)return alert('من فضلك اكتب العنوان');try{const r=await fetch('/api/public/payment-methods?storeId='+encodeURIComponent(STORE_ID));const d=await r.json();if(!r.ok||!d.ok)throw Error(d.message||'تعذر تحميل طرق الدفع');const p=d.payment||{},m=[];if(p.cash?.enabled)m.push({id:'cash',name:p.cash.name||'دفع كاش عند الاستلام'});for(const k of ['vodafoneCash','etisalatCash','orangeCash','wePay','instapay'])if(p[k]?.enabled)m.push({id:k,name:p[k].name||k,details:p[k].number||p[k].account||''});if(p.card?.enabled)m.push({id:'card',name:p.card.name||'Visa / Mastercard'});if(!m.length)return alert('لا توجد طرق دفع متاحة حالياً');window.pendingOrderData={address,building,floor,apartment,notes,location:window.checkoutCustomerLocation||null};$('modalTitle').textContent='اختيار طريقة الدفع';$('cartItems').innerHTML=m.map((x,i)=>'<label style="display:block;padding:14px;border:1px solid #e2e8f0;border-radius:14px;margin:9px 0;cursor:pointer"><input type="radio" name="payment" value="'+esc(x.id)+'" '+(i===0?'checked':'')+'> <b>'+esc(x.name)+'</b>'+(x.details?'<div style="color:#64748b;margin-top:5px">'+esc(x.details)+'</div>':'')+'</label>').join('')+'<button class="btn success wide" onclick="submitOrder()">تأكيد وإرسال الطلب</button>';$('cartTotal').innerHTML='';$('checkoutBtn').classList.add('hidden')}catch(e){console.error(e);alert('حدث خطأ أثناء تحميل طرق الدفع')}}
 async function submitOrder(){const selected=document.querySelector('input[name="payment"]:checked');if(!selected)return alert('اختر طريقة الدفع');const d=window.pendingOrderData||{};const items=cart.map(x=>({productId:Number(x.productId),code:String(x.code||''),name:String(x.name||''),price:Number(x.price||0),qty:Number(x.qty||0)}));try{const r=await fetch('/api/public/orders',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+customerToken},body:JSON.stringify({storeId:STORE_ID,type:'delivery',customer:{name:customer.name||'',phone:customer.phone||'',address:d.address||'',building:d.building||'',floor:d.floor||'',apartment:d.apartment||'',notes:d.notes||''},customerLocation:d.location||null,items,paymentMethod:selected.value})});const x=await r.json();if(!r.ok||!x.ok)return alert(x.message||'تعذر إرسال الطلب');cart=[];updateCart();window.lastOnlineOrder={id:x.order.id,number:x.order.number,status:x.order.status||'new',total:x.order.total};localStorage.setItem('hesbah_last_online_order',JSON.stringify(window.lastOnlineOrder));renderOrderSuccess()}catch(e){console.error(e);alert('حدث خطأ أثناء إرسال الطلب')}}
-function renderOrderSuccess(){openCart();$('modalTitle').textContent='تم إرسال الطلب بنجاح';$('cartItems').innerHTML='<div style="text-align:center;padding:12px"><div style="font-size:58px">✅</div><h2>طلبك وصل للمتجر</h2><p>رقم الطلب: <b>'+esc(window.lastOnlineOrder.number)+'</b></p><div class="tracking"><h3>حالة الطلب</h3><div id="statusText">جاري تحميل الحالة...</div><div id="steps"></div><div id="trackInfo" style="margin-top:10px;color:#64748b"></div><div id="trackMap" class="map"></div></div><button class="btn primary wide" style="margin-top:14px" onclick="startNewOrder();closeCart()">🛒 تسجيل طلب جديد</button><button class="btn ghost wide" style="margin-top:8px" onclick="closeCart();goHome()">← العودة</button></div>';$('cartTotal').innerHTML='';$('checkoutBtn').classList.add('hidden');startTracking()}
+function renderOrderSuccess(){openCart();$('modalTitle').textContent='تم إرسال الطلب بنجاح';$('cartItems').innerHTML='<div style="text-align:center;padding:12px"><div style="font-size:58px">✅</div><h2>طلبك وصل للمتجر</h2><p>رقم الطلب: <b>'+esc(window.lastOnlineOrder.number)+'</b></p><div class="tracking"><h3>حالة الطلب</h3><div id="statusText">جاري تحميل الحالة...</div><div id="steps"></div><div id="trackInfo" style="margin-top:10px;color:#64748b"></div>
+<div id="trackMap" class="map"></div>
+<div id="orderChat" class="chat-box">
+  <div class="chat-head">💬 شات مع المندوب</div>
+  <div id="orderChatMessages" class="chat-messages"><div class="empty" style="padding:20px">جاري تحميل المحادثة...</div></div>
+  <div class="chat-input">
+    <input id="orderChatInput" maxlength="1000" placeholder="اكتب رسالة للمندوب...">
+    <button id="orderChatSend" onclick="sendOrderChat()">إرسال</button>
+  </div>
+</div></div><button class="btn primary wide" style="margin-top:14px" onclick="startNewOrder();closeCart()">🛒 تسجيل طلب جديد</button><button class="btn ghost wide" style="margin-top:8px" onclick="closeCart();goHome()">← العودة</button></div>';$('cartTotal').innerHTML='';$('checkoutBtn').classList.add('hidden');startTracking()}
 function statusLabel(s){return ({new:'تم استلام الطلب',accepted:'تم قبول الطلب',preparing:'جاري تجهيز الطلب',ready:'الطلب جاهز',out_for_delivery:'🛵 خرج الطلب للتوصيل',completed:'تم التسليم',rejected:'تم رفض الطلب'})[s]||s||'غير معروف'}
 function renderSteps(s){const a=[['new','تم استلام الطلب'],['accepted','تم قبول الطلب'],['preparing','جاري التجهيز'],['ready','الطلب جاهز'],['out_for_delivery','🛵 خرج للتوصيل'],['completed','تم التسليم']];const ix=a.findIndex(x=>x[0]===s);return a.map((x,i)=>'<div class="step '+(i<ix?'done ':i===ix?'active':'')+'">'+(i<ix?'✅':i===ix?'🔵':'⚪')+' '+x[1]+'</div>').join('')}
-async function refreshTracking(){if(!window.lastOnlineOrder||!customerToken)return;try{const r=await fetch('/api/public/orders/status?storeId='+encodeURIComponent(STORE_ID)+'&orderId='+encodeURIComponent(window.lastOnlineOrder.id),{headers:{Authorization:'Bearer '+customerToken},cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)return;const o=d.order;window.lastOnlineOrder={...window.lastOnlineOrder,...o};localStorage.setItem('hesbah_last_online_order',JSON.stringify(window.lastOnlineOrder));if($('statusText'))$('statusText').innerHTML='<b>'+esc(statusLabel(o.status))+'</b>'+(o.driverName?'<div style="margin-top:7px">🛵 المندوب: <b>'+esc(o.driverName)+'</b></div>':'');if($('steps'))$('steps').innerHTML=renderSteps(o.status);if($('trackInfo'))$('trackInfo').textContent=o.status==='out_for_delivery'?(o.driverLocation?'🟢 موقع الدليفري يتحرك الآن':'🟡 الطلب خرج للتوصيل'):o.status==='completed'?'✅ تم التسليم بنجاح':o.status==='rejected'?'❌ تم رفض الطلب':'سيتم تحديث الحالة تلقائياً.';if(o.status==='completed'||o.status==='rejected')stopTracking()}catch(e){console.error('tracking',e)}}
-function startTracking(){stopTracking();refreshTracking();trackingTimer=setInterval(refreshTracking,5000)}function stopTracking(){if(trackingTimer){clearInterval(trackingTimer);trackingTimer=null}}
+function formatChatTime(v){try{return new Date(v).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
+function renderOrderChat(messages){
+  const box=$('orderChatMessages');
+  if(!box)return;
+  if(!messages.length){box.innerHTML='<div class="empty" style="padding:20px">لا توجد رسائل بعد. يمكنك مراسلة المندوب هنا.</div>';return}
+  box.innerHTML=messages.map(m=>'<div class="chat-msg '+(m.sender==='customer'?'customer':'driver')+'"><b>'+esc(m.sender==='customer'?'أنت':(m.senderName||'المندوب'))+'</b><div>'+esc(m.text)+'</div><small>'+esc(formatChatTime(m.createdAt))+'</small></div>').join('');
+  box.scrollTop=box.scrollHeight;
+}
+async function refreshOrderChat(){
+  if(!window.lastOnlineOrder||!customerToken||!$('orderChatMessages'))return;
+  try{
+    const r=await fetch('/api/public/orders/chat?storeId='+encodeURIComponent(STORE_ID)+'&orderId='+encodeURIComponent(window.lastOnlineOrder.id),{headers:{Authorization:'Bearer '+customerToken},cache:'no-store'});
+    const d=await r.json();
+    if(r.ok&&d.ok)renderOrderChat(Array.isArray(d.messages)?d.messages:[]);
+  }catch(e){console.error('chat',e)}
+}
+async function sendOrderChat(){
+  const input=$('orderChatInput'),btn=$('orderChatSend');
+  if(!input||!customerToken||!window.lastOnlineOrder)return;
+  const text=input.value.trim();
+  if(!text)return;
+  btn.disabled=true;
+  try{
+    const r=await fetch('/api/public/orders/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+customerToken},body:JSON.stringify({storeId:STORE_ID,orderId:Number(window.lastOnlineOrder.id),text})});
+    const d=await r.json();
+    if(!r.ok||!d.ok)throw Error(d.message||'تعذر إرسال الرسالة');
+    input.value='';
+    await refreshOrderChat();
+  }catch(e){alert(e.message)}
+  finally{btn.disabled=false;input.focus()}
+}
+function renderDriverMap(driverLocation,customerLocation){
+  const el=$('trackMap');
+  if(!el)return;
+  if(!driverLocation){
+    el.style.display='none';
+    if(trackingMap){trackingMap.remove();trackingMap=null;driverMarker=null;customerMarker=null;trackingLine=null}
+    return;
+  }
+  el.style.display='block';
+  if(typeof L==='undefined'){
+    el.innerHTML='<div style="padding:20px;text-align:center">📍 موقع المندوب: '+Number(driverLocation.lat).toFixed(6)+', '+Number(driverLocation.lng).toFixed(6)+'</div>';
+    return;
+  }
+  const d=[Number(driverLocation.lat),Number(driverLocation.lng)];
+  const customerPoint=customerLocation&&Number.isFinite(Number(customerLocation.lat))&&Number.isFinite(Number(customerLocation.lng))
+    ? [Number(customerLocation.lat),Number(customerLocation.lng)] : null;
+  if(!trackingMap){
+    trackingMap=L.map(el,{zoomControl:true}).setView(d,15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(trackingMap);
+    driverMarker=L.marker(d).addTo(trackingMap).bindPopup('🛵 موقع المندوب');
+  }else{
+    trackingMap.invalidateSize();
+    driverMarker?driverMarker.setLatLng(d):driverMarker=L.marker(d).addTo(trackingMap).bindPopup('🛵 موقع المندوب');
+  }
+  if(customerPoint){
+    if(!customerMarker)customerMarker=L.marker(customerPoint).addTo(trackingMap).bindPopup('📍 موقعك');
+    else customerMarker.setLatLng(customerPoint);
+    const pts=[d,customerPoint];
+    if(trackingLine)trackingLine.setLatLngs(pts);
+    else trackingLine=L.polyline(pts).addTo(trackingMap);
+    trackingMap.fitBounds(L.latLngBounds(pts),{padding:[25,25],maxZoom:16});
+  }else{
+    trackingMap.setView(d,15);
+  }
+}
+async function refreshTracking(){
+  if(!window.lastOnlineOrder||!customerToken)return;
+  try{
+    const r=await fetch('/api/public/orders/status?storeId='+encodeURIComponent(STORE_ID)+'&orderId='+encodeURIComponent(window.lastOnlineOrder.id),{headers:{Authorization:'Bearer '+customerToken},cache:'no-store'});
+    const d=await r.json();
+    if(!r.ok||!d.ok)return;
+    const o=d.order;
+    window.lastOnlineOrder={...window.lastOnlineOrder,...o};
+    localStorage.setItem('hesbah_last_online_order',JSON.stringify(window.lastOnlineOrder));
+    if($('statusText'))$('statusText').innerHTML='<b>'+esc(statusLabel(o.status))+'</b>'+(o.driverName?'<div style="margin-top:7px">🛵 المندوب: <b>'+esc(o.driverName)+'</b>'+(o.driverPhone?'<br>📞 '+esc(o.driverPhone):'')+'</div>':'');
+    if($('steps'))$('steps').innerHTML=renderSteps(o.status);
+    if($('trackInfo'))$('trackInfo').textContent=o.status==='out_for_delivery'?(o.driverLocation?'🟢 موقع الدليفري يتحرك الآن':'🟡 الطلب خرج للتوصيل'):o.status==='completed'?'✅ تم التسليم بنجاح':o.status==='rejected'?'❌ تم رفض الطلب':'سيتم تحديث الحالة تلقائياً.';
+    renderDriverMap(o.driverLocation,o.customerLocation);
+    await refreshOrderChat();
+    if(o.status==='completed'||o.status==='rejected')stopTracking();
+  }catch(e){console.error('tracking',e)}
+}
+function startTracking(){stopTracking();refreshTracking();trackingTimer=setInterval(refreshTracking,5000)}
+function stopTracking(){if(trackingTimer){clearInterval(trackingTimer);trackingTimer=null}if(trackingMap){setTimeout(()=>{try{trackingMap.invalidateSize()}catch(e){}},50)}}
+
 function showLatestOrder(){if(!window.lastOnlineOrder)return alert('لا يوجد طلب محفوظ للمشاهدة');openCart();renderOrderSuccess()}
 function renderLatestOrder(){const box=$('latestOrder');const o=window.lastOnlineOrder;if(!o){box.innerHTML='<div class="empty">لا يوجد طلب حتى الآن.<br>اضغط على <b>تسجيل طلب جديد</b> للبدء.</div>';return}box.innerHTML='<div class="order-card"><div class="order-row"><div><b>'+esc(o.number||'طلب')+'</b><div style="color:#64748b;margin-top:5px">الإجمالي: '+Number(o.total||0).toFixed(2)+' جنيه</div></div><span class="badge">'+esc(statusLabel(o.status))+'</span></div><button class="btn primary wide" style="margin-top:12px" onclick="showLatestOrder()">متابعة الطلب</button></div>'}
 function logoutCustomer(){stopTracking();customer=null;customerToken='';cart=[];localStorage.removeItem('hesbah_customer_token');localStorage.removeItem('hesbah_customer');localStorage.removeItem('hesbah_last_online_order');$('app').classList.add('hidden');$('authPage').classList.remove('hidden');showLogin()}
