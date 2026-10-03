@@ -5,7 +5,7 @@ const KEY = "amircasher_db_v1";
 
 const defaults = {
   shop:{name:"متجري",phone:"",address:"",device:"جهاز",logo:""},
-  online:{enabled:false,url:"",storeId:"demo",autoSync:false},
+  online:{enabled:false,url:"",storeId:"demo",autoSync:true,revision:0},
   owner:{name:"المهندس امير سلامه خلف الله",phone:"01284321280"},
   printer:{copies:1,drawer:false,printer:"النظام الافتراضي",prep:false},
   activation:{status:"تجريبي",code:"",customer:""},
@@ -60,11 +60,45 @@ function load(){
     return d;
   }catch{return structuredClone(defaults)}
 }
-let syncTimer=null, syncBusy=false;
-function save(){localStorage.setItem(KEY,JSON.stringify(db)); $("#saveStatus").textContent="✓ البيانات محفوظة محليًا"; if(db.online?.enabled && db.online.url && db.online.autoSync){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncOnline(false),1200)}}
+let syncTimer=null, syncBusy=false, syncInterval=null;
+function setSyncStatus(state,message){
+  const el=$("#saveStatus");
+  if(!el)return;
+  const text=message||(
+    state==="online"?"🟢 متصل — تمت المزامنة":
+    state==="syncing"?"🔄 جاري المزامنة...":
+    state==="offline"?"🟠 غير متصل — سيتم التزامن تلقائيًا عند عودة الإنترنت":
+    "✓ البيانات محفوظة محليًا"
+  );
+  el.textContent=text;
+}
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(db));
+  setSyncStatus("local");
+  if(db.online?.enabled && db.online.url && db.online.autoSync){
+    clearTimeout(syncTimer);
+    syncTimer=setTimeout(()=>syncOnline(false),1200);
+  }
+}
 function onlineUrl(){return String(db.online?.url||"").trim().replace(/\/$/,"")}
-async function onlineFetch(path,opt={}){const base=onlineUrl();if(!base)throw new Error("أدخل عنوان سيرفر Hesbah أولًا");const headers={...(opt.headers||{}),"Content-Type":"application/json"};const token=localStorage.getItem("hesbah_online_token");if(token)headers.Authorization="Bearer "+token;const r=await fetch(base+path,{...opt,headers});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.message||`خطأ اتصال ${r.status}`);return d}
-async function connectOnline(){const cfg=db.online||{};if(!cfg.url)return toast("أدخل عنوان السيرفر أولًا");try{const d=await onlineFetch("/api/login",{method:"POST",body:JSON.stringify({storeId:cfg.storeId||"demo",username:"admin",password:"admin"})});localStorage.setItem("hesbah_online_token",d.token);return d}catch(e){toast("تعذر الاتصال: "+e.message);throw e}}
+async function onlineFetch(path,opt={}){
+  const base=onlineUrl();
+  if(!base)throw new Error("أدخل عنوان سيرفر Hesbah أولًا");
+  const headers={...(opt.headers||{}),"Content-Type":"application/json"};
+  const token=localStorage.getItem("hesbah_online_token");
+  if(token)headers.Authorization="Bearer "+token;
+  const r=await fetch(base+path,{...opt,headers});
+  let d={};try{d=await r.json()}catch{}
+  if(!r.ok)throw new Error(d.message||`خطأ اتصال ${r.status}`);
+  return d;
+}
+async function connectOnline(){
+  const cfg=db.online||{};
+  if(!cfg.url)throw new Error("أدخل عنوان سيرفر Hesbah أولًا");
+  const d=await onlineFetch("/api/login",{method:"POST",body:JSON.stringify({storeId:cfg.storeId||"demo",username:"admin",password:"admin"})});
+  localStorage.setItem("hesbah_online_token",d.token);
+  return d;
+}
 function mergeOnlineData(remote){
   const keepOnline={...(db.online||{})};
   const r=remote&&typeof remote==="object"?remote:{};
@@ -93,11 +127,41 @@ function mergeOnlineData(remote){
   merged.users=Array.isArray(r.users)&&r.users.length?r.users:db.users;
   db=merged; ensureDatabase(); refreshBrandLogo();
 }
-async function syncOnline(show=true){if(syncBusy||!db.online?.enabled||!onlineUrl())return;syncBusy=true;try{let token=localStorage.getItem("hesbah_online_token");if(!token){await connectOnline();token=localStorage.getItem("hesbah_online_token");}const boot=await onlineFetch("/api/bootstrap");const serverRev=Number(boot.revision||1);const localRev=Number(db.online?.revision||0);
-  if(localRev!==serverRev){mergeOnlineData(boot.db);db.online.revision=serverRev;localStorage.setItem(KEY,JSON.stringify(db));if(show)toast("تم تحديث بيانات Hesbah Online على الكاشير");}
-  const payload={revision:serverRev,db:{...db}};delete payload.db.online;delete payload.db.orders;delete payload.db.drivers;
-  const out=await onlineFetch("/api/sync",{method:"POST",body:JSON.stringify(payload)});db.online.revision=out.revision||serverRev;localStorage.setItem(KEY,JSON.stringify(db));if(show)toast("تمت مزامنة الكاشير مع السيرفر");
-}catch(e){if(show)toast("فشلت المزامنة: "+e.message)}finally{syncBusy=false}}
+async function syncOnline(show=true){
+  if(syncBusy||!db.online?.enabled||!onlineUrl())return;
+  syncBusy=true;
+  setSyncStatus("syncing");
+  try{
+    let token=localStorage.getItem("hesbah_online_token");
+    if(!token){await connectOnline();token=localStorage.getItem("hesbah_online_token");}
+    const boot=await onlineFetch("/api/bootstrap");
+    const serverRev=Number(boot.revision||1);
+    const localRev=Number(db.online?.revision||0);
+
+    if(localRev!==serverRev){
+      mergeOnlineData(boot.db);
+      db.online.revision=serverRev;
+      localStorage.setItem(KEY,JSON.stringify(db));
+      if(show)toast("تم تحديث بيانات Hesbah Online على الكاشير");
+    }
+
+    const payload={revision:serverRev,db:{...db}};
+    delete payload.db.online;
+    delete payload.db.orders;
+    delete payload.db.drivers;
+
+    const out=await onlineFetch("/api/sync",{method:"POST",body:JSON.stringify(payload)});
+    db.online.revision=out.revision||serverRev;
+    localStorage.setItem(KEY,JSON.stringify(db));
+    setSyncStatus("online");
+    if(show)toast("تمت مزامنة الكاشير مع السيرفر");
+    return out;
+  }catch(e){
+    setSyncStatus("offline");
+    if(show)toast("الإنترنت غير متاح الآن — البيانات محفوظة محليًا وستتم المزامنة تلقائيًا");
+    return null;
+  }finally{syncBusy=false}
+}
 function applyOnlineDb(remote){const keepOnline=db.online;db={...remote,online:keepOnline};ensureDatabase();refreshBrandLogo()}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
 function money(n){return Number(n||0).toFixed(2)+" ج.م"}
@@ -136,6 +200,12 @@ function normalizeUserRecord(u){
   return x;
 }
 
+function startAutomaticSync(){
+  if(syncInterval)clearInterval(syncInterval);
+  syncInterval=setInterval(()=>{if(navigator.onLine)syncOnline(false);},15000);
+  window.addEventListener("online",()=>{setSyncStatus("syncing","🟢 عاد الإنترنت — جاري المزامنة تلقائيًا...");syncOnline(true);});
+  window.addEventListener("offline",()=>setSyncStatus("offline"));
+}
 function ensureDatabase(){
   let changed=false;
   if(!db || typeof db !== "object") { db=structuredClone(defaults); changed=true; }
@@ -151,6 +221,9 @@ function ensureDatabase(){
     db.categories=["عام"]; changed=true;
   }
   db.products=(Array.isArray(db.products)?db.products:[]).map(p=>({...p,category:p.category||"عام"}));
+  if(!db.online || typeof db.online!=="object") { db.online={enabled:false,url:"",storeId:"demo",autoSync:true,revision:0}; changed=true; }
+  if(db.online.autoSync!==true){ db.online.autoSync=true; changed=true; }
+  if(!Number.isFinite(Number(db.online.revision))) { db.online.revision=0; changed=true; }
   if(changed) save();
   return db;
 }
@@ -603,7 +676,8 @@ Object.defineProperty(window,"hesbahDB",{configurable:true,get:function(){return
 const originalRoute=route;
 ensureDatabase();
 refreshBrandLogo();
-if(db.online?.enabled && db.online.url) setTimeout(()=>syncOnline(false),1500);
+startAutomaticSync();
+if(db.online?.enabled && db.online.url) setTimeout(()=>syncOnline(false),1200);
 if(sessionStorage.getItem("amir_session")){const s=JSON.parse(sessionStorage.getItem("amir_session"));$("#loginScreen").classList.add("hidden");$("#app").classList.remove("hidden");$("#sideUser").textContent=s.name;route("pos");checkLicense()}
 })();
 
