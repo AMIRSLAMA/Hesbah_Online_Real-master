@@ -921,6 +921,75 @@ if(p==='/api/public/driver/location'&&req.method==='PUT'){
   return json(res,200,{ok:true,location:order.driverLocation});
 }
 
+
+/* ===============================
+   Hesbah Online - Order Chat
+   Customer <-> Delivery Driver
+   =============================== */
+
+if(p==='/api/public/orders/chat' && (req.method==='GET' || req.method==='POST')){
+  const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'').trim();
+  if(!token) return json(res,401,{ok:false,message:'يجب تسجيل الدخول أولاً'});
+
+  const payload=verifyToken(token);
+  if(!payload || !['customer','driver_account'].includes(payload.role)){
+    return json(res,401,{ok:false,message:'جلسة المحادثة غير صالحة'});
+  }
+
+  const bodyData=req.method==='POST' ? await body(req) : {};
+  const storeId=String(
+    payload.storeId || u.query?.storeId || bodyData.storeId || 'demo'
+  ).trim() || 'demo';
+  const orderId=Number(
+    u.query?.orderId || bodyData.orderId || payload.orderId || 0
+  );
+
+  const db=load(storeId);
+  const order=(db.orders||[]).find(x=>Number(x.id)===orderId);
+
+  if(!order) return json(res,404,{ok:false,message:'الطلب غير موجود'});
+
+  const isCustomer=payload.role==='customer';
+  const isDriver=payload.role==='driver_account';
+
+  if(isCustomer && Number(order.customerId)!==Number(payload.customerId)){
+    return json(res,403,{ok:false,message:'هذا الطلب لا يخص حسابك'});
+  }
+
+  if(isDriver && Number(order.driverId)!==Number(payload.driverId)){
+    return json(res,403,{ok:false,message:'هذا الطلب غير مسند إليك'});
+  }
+
+  if(req.method==='GET'){
+    const messages=Array.isArray(order.chat)?order.chat:[];
+    return json(res,200,{ok:true,messages});
+  }
+
+  const text=String(bodyData.text||'').trim();
+  if(!text) return json(res,400,{ok:false,message:'اكتب رسالة أولاً'});
+  if(text.length>1000) return json(res,400,{ok:false,message:'الرسالة طويلة جدًا'});
+
+  if(!Array.isArray(order.chat)) order.chat=[];
+
+  const message={
+    id:Date.now()+Math.floor(Math.random()*1000),
+    sender:isCustomer?'customer':'driver',
+    senderName:isCustomer
+      ? String(order.customer?.name||'العميل')
+      : String(order.driverName||'المندوب'),
+    text,
+    createdAt:new Date().toISOString()
+  };
+
+  order.chat.push(message);
+  if(order.chat.length>200) order.chat=order.chat.slice(-200);
+
+  db.revision=(db.revision||1)+1;
+  save(storeId,db);
+
+  return json(res,201,{ok:true,message});
+}
+
 if(p==='/api/public/payment-methods'&&req.method==='GET'){
   const storeId=String(
   u.query?.storeId || 'demo'
