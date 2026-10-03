@@ -18,14 +18,22 @@ input{border:1px solid #d1d5db}.primary{background:#2563eb;color:#fff}.start{bac
 .driver-chat-card{width:min(560px,100%);max-height:90vh;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 70px rgba(2,8,23,.25)}
 .driver-chat-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#0f172a;color:#fff}
 .driver-chat-head button{border:0;background:#334155;color:#fff;border-radius:50%;width:34px;height:34px;font-size:20px}
-.driver-chat-messages{height:330px;overflow:auto;padding:12px;background:#f1f5f9;display:flex;flex-direction:column;gap:8px}
-.driver-chat-msg{max-width:82%;padding:9px 12px;border-radius:14px;line-height:1.5}
-.driver-chat-msg.driver{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:4px}
-.driver-chat-msg.customer{align-self:flex-start;background:#fff;color:#0f172a;border:1px solid #e2e8f0;border-bottom-left-radius:4px}
-.driver-chat-msg small{display:block;opacity:.7;font-size:10px;margin-top:4px}
-.driver-chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #e2e8f0}
-.driver-chat-input input{flex:1;border:1px solid #cbd5e1;border-radius:12px;padding:10px}
-.driver-chat-input button{border:0;border-radius:12px;padding:10px 15px;background:#2563eb;color:#fff;font-weight:900}
+.driver-chat-messages{height:330px;overflow-y:auto;overflow-x:hidden;padding:12px;background:#f8fafc;display:flex;flex-direction:column;gap:9px}
+.driver-chat-msg{max-width:82%;padding:10px 12px;border-radius:16px;line-height:1.55;word-break:break-word}
+.driver-chat-msg.driver{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:5px}
+.driver-chat-msg.customer{align-self:flex-start;background:#fff;color:#0f172a;border:1px solid #dbe3ee;border-bottom-left-radius:5px}
+.driver-chat-msg small{display:block;opacity:.72;font-size:10px;margin-top:4px}
+.driver-chat-input{display:flex;flex-direction:row;align-items:center;gap:8px;padding:10px;background:#fff;border-top:1px solid #e2e8f0;direction:rtl}
+.driver-chat-input input{flex:1 1 auto;min-width:0;width:auto !important;border:1px solid #cbd5e1;border-radius:12px;padding:11px 12px;height:46px;margin:0}
+.driver-chat-input button{flex:0 0 82px;width:82px !important;height:46px;border:0;border-radius:12px;padding:0;margin:0;background:#2563eb;color:#fff;font-weight:900}
+@media(max-width:650px){
+  .driver-chat-modal{padding:8px;align-items:flex-start}
+  .driver-chat-card{width:100%;max-height:calc(100dvh - 16px);margin:0;border-radius:18px}
+  .driver-chat-messages{height:calc(100dvh - 190px);min-height:220px}
+  .driver-chat-input{position:sticky;bottom:0}
+  .driver-chat-input input{font-size:15px}
+  .driver-chat-input button{flex-basis:76px;width:76px !important}
+}
 </style></head>
 <body>
 <div class="wrap">
