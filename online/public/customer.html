@@ -180,20 +180,40 @@ function renderDriverMap(driverLocation,customerLocation){
 }
 async function refreshTracking(){
   if(!window.lastOnlineOrder||!customerToken)return;
+  const statusBox=$('statusText');
   try{
-    const r=await fetch('/api/public/orders/status?storeId='+encodeURIComponent(STORE_ID)+'&orderId='+encodeURIComponent(window.lastOnlineOrder.id),{headers:{Authorization:'Bearer '+customerToken},cache:'no-store'});
-    const d=await r.json();
-    if(!r.ok||!d.ok)return;
-    const o=d.order;
+    const orderId=Number(window.lastOnlineOrder.id||0);
+    if(!orderId)throw Error('رقم الطلب غير صالح');
+    if(statusBox&&!statusBox.dataset.loaded){
+      statusBox.innerHTML='<span style="color:#64748b">جاري الاتصال بالسيرفر...</span>';
+    }
+    const r=await fetch('/api/public/orders/status?storeId='+encodeURIComponent(STORE_ID)+'&orderId='+encodeURIComponent(orderId)+'&_='+Date.now(),{
+      headers:{Authorization:'Bearer '+customerToken,'Cache-Control':'no-cache'},
+      cache:'no-store'
+    });
+    let d=null;
+    try{d=await r.json()}catch(e){d=null}
+    if(!r.ok||!d?.ok){
+      const message=d?.message||('تعذر تحديث حالة الطلب (HTTP '+r.status+')');
+      if(statusBox)statusBox.innerHTML='<span style="color:#b91c1c">⚠️ '+esc(message)+'</span>';
+      console.error('tracking api',r.status,d);
+      await refreshOrderChat();
+      return;
+    }
+    const o=d.order||{};
+    statusBox.dataset.loaded='1';
     window.lastOnlineOrder={...window.lastOnlineOrder,...o};
     localStorage.setItem('hesbah_last_online_order',JSON.stringify(window.lastOnlineOrder));
-    if($('statusText'))$('statusText').innerHTML='<b>'+esc(statusLabel(o.status))+'</b>'+(o.driverName?'<div style="margin-top:7px">🛵 المندوب: <b>'+esc(o.driverName)+'</b>'+(o.driverPhone?'<br>📞 '+esc(o.driverPhone):'')+'</div>':'');
+    if(statusBox)statusBox.innerHTML='<b>'+esc(statusLabel(o.status))+'</b>'+(o.driverName?'<div style="margin-top:7px">🛵 المندوب: <b>'+esc(o.driverName)+'</b>'+(o.driverPhone?'<br>📞 '+esc(o.driverPhone):'')+'</div>':'');
     if($('steps'))$('steps').innerHTML=renderSteps(o.status);
     if($('trackInfo'))$('trackInfo').textContent=o.status==='out_for_delivery'?(o.driverLocation?'🟢 موقع الدليفري يتحرك الآن':'🟡 الطلب خرج للتوصيل'):o.status==='completed'?'✅ تم التسليم بنجاح':o.status==='rejected'?'❌ تم رفض الطلب':'سيتم تحديث الحالة تلقائياً.';
     renderDriverMap(o.driverLocation,o.customerLocation);
     await refreshOrderChat();
     if(o.status==='completed'||o.status==='rejected')stopTracking();
-  }catch(e){console.error('tracking',e)}
+  }catch(e){
+    console.error('tracking',e);
+    if(statusBox)statusBox.innerHTML='<span style="color:#b91c1c">⚠️ تعذر تحديث حالة الطلب: '+esc(e.message||'خطأ غير معروف')+'</span>';
+  }
 }
 function startTracking(){stopTracking();refreshTracking();trackingTimer=setInterval(refreshTracking,5000)}
 function stopTracking(){if(trackingTimer){clearInterval(trackingTimer);trackingTimer=null}if(trackingMap){setTimeout(()=>{try{trackingMap.invalidateSize()}catch(e){}},50)}}
