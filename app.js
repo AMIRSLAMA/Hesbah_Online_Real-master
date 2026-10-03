@@ -175,7 +175,7 @@ async function syncOnline(show=true){
 }
 function applyOnlineDb(remote){const keepOnline=db.online;db={...remote,online:keepOnline};ensureDatabase();refreshBrandLogo()}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
-async function checkHesbahUpdate(showToast){
+window.checkHesbahUpdate = async function(showToast){
   if(!window.amir?.checkForUpdates){ if(showToast)toast("التحديث غير متاح في وضع التشغيل الحالي"); return; }
   const box=$("#updateStatusBox");
   if(box)box.textContent="🔎 جاري البحث عن تحديث...";
@@ -186,7 +186,7 @@ async function checkHesbahUpdate(showToast){
   if(box)box.textContent="✅ لا يوجد تحديث أحدث حاليًا.";
   if(showToast)toast("البرنامج محدث بالفعل");
 }
-async function installHesbahUpdate(){
+window.installHesbahUpdate = async function(){
   if(!window.amir?.installUpdate)return;
   const ok=confirm("تم تنزيل التحديث. سيتم إغلاق Hesbah وإعادة تشغيله تلقائيًا. هل تريد المتابعة؟");
   if(!ok)return;
