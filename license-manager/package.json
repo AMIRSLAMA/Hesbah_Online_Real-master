@@ -1,0 +1,8 @@
+{
+  "name": "hesbah-license-manager",
+  "version": "1.0.0",
+  "description": "Hesbah License Manager - أداة إدارية لإصدار تراخيص Hesbah",
+  "main": "main.js",
+  "scripts": { "start": "electron ." },
+  "devDependencies": { "electron": "^38.0.0" }
+}
