@@ -148,6 +148,11 @@ function serveDashboardStatic(req,res){
 }
 function serveFile404(res){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end('Not found')}
 async function handle(req,res){if(req.method==='OPTIONS')return json(res,204,{});const u=url.parse(req.url,true),p=u.pathname;
+// The main public URL opens the current management dashboard, not the legacy landing page.
+if(p==='/'||p===''){
+  res.writeHead(302,{'Location':'/dashboard/','Cache-Control':'no-store'});
+  return res.end();
+}
 if(p==='/api/health')return json(res,200,{ok:true,service:'Hesbah Online',time:new Date().toISOString()});
 if(p==='/dashboard'||p==='/dashboard/') return serveDashboardStatic(req,res);
 if(p.startsWith('/dashboard/')) return serveDashboardStatic(req,res);
