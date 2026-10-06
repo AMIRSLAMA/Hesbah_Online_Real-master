@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<title>حسبة أوفر | العروض والطلبات</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--blue:#2563eb;--dark:#0f172a;--line:#e5e7eb;--green:#16a34a;--red:#dc2626}
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1180px;margin:auto;padding:16px}
+header{position:sticky;top:0;z-index:10;background:#ffffffee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav{max-width:1180px;margin:auto;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}.mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:900}
+.brand b{display:block;font-size:19px}.brand small{color:var(--muted)}.actions{display:flex;gap:8px}
+.btn{border:0;border-radius:12px;padding:10px 14px}.primary{background:var(--blue);color:#fff}.light{background:#eef2ff;color:#1d4ed8}.dark{background:var(--dark);color:#fff}.danger{background:#fee2e2;color:#991b1b}
+.hero{margin-top:18px;padding:28px;border-radius:24px;background:linear-gradient(135deg,#0f172a,#2563eb);color:#fff}.hero h1{margin:0 0 10px;font-size:clamp(27px,5vw,43px)}.hero p{margin:0;color:#dbeafe;line-height:1.8}
+.section{margin-top:22px}.head{display:flex;justify-content:space-between;align-items:center;gap:10px}.shops{display:flex;gap:9px;overflow:auto;padding:10px 2px}.shop{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px}.shop.active{background:var(--dark);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:0 7px 22px #00000008}
+.icon{height:110px;border-radius:15px;background:linear-gradient(135deg,#eff6ff,#f5f3ff);display:grid;place-items:center;font-size:45px;margin-bottom:11px}
+.price{font-size:21px;font-weight:900}.old{text-decoration:line-through;color:#9ca3af;font-size:12px;margin-right:6px}.muted{color:var(--muted);font-size:12px}.foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}
+.overlay{position:fixed;inset:0;background:#02061799;display:none;align-items:flex-end;justify-content:center;z-index:30}.overlay.open{display:flex}.sheet{background:#fff;width:min(760px,100%);max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:18px}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.qty{display:flex;align-items:center;gap:7px}.qty button{width:31px;height:31px;border:1px solid var(--line);background:#fff;border-radius:9px}
+.form{display:grid;gap:9px}.form input,.form select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.notice{padding:11px 13px;border-radius:12px;background:#eff6ff;color:#1e40af;line-height:1.7;font-size:13px}.success{background:#f0fdf4;color:#166534}.error{background:#fef2f2;color:#991b1b}.status{display:inline-block;padding:6px 9px;border-radius:999px;background:#f3f4f6;font-size:12px;font-weight:700}
+.empty{text-align:center;padding:30px;color:var(--muted);background:#fff;border:1px dashed #cbd5e1;border-radius:18px}
+.total{font-size:20px;font-weight:900;border-top:1px solid var(--line);padding-top:9px;margin-top:8px}
+@media(min-width:800px){.overlay{align-items:center}.sheet{border-radius:24px}}
+</style>
+</head>
+<body>
+<header><div class="nav">
+<div class="brand"><div class="mark">هـ</div><div><b>حسبة أوفر</b><small> عروض تستاهل</small></div></div>
+<div class="actions"><button class="btn light" onclick="account()">حسابي</button><button class="btn primary" onclick="openCart()">السلة (<span id="count">0</span>)</button></div>
+</div></header>
+<main class="wrap">
+<section class="hero"><h1>اشتري أوفر، واطلب أسهل.</h1><p>اكتشف العروض، اختار منتجاتك من متجر واحد، وابعت الطلب لحد باب البيت.</p></section>
+<section class="section"><div class="head"><h2>المتاجر</h2><span id="shopMeta" class="muted"></span></div><div id="shops" class="shops"></div></section>
+<section class="section"><div class="head"><h2>العروض الحالية</h2><span id="offerMeta" class="muted"></span></div><div id="offers" class="grid" style="margin-top:12px"></div></section>
+<section class="section"><div class="card"><div class="head"><h2>متابعة طلب</h2><button class="btn light" onclick="track()">متابعة</button></div><div class="form" style="margin-top:10px"><input id="trackNo" placeholder="رقم الطلب مثل HO-02544519"><input id="trackPhone" placeholder="رقم الهاتف"></div><div id="trackOut" style="margin-top:10px"></div></div></section>
+</main>
+<div id="cartModal" class="overlay"><div class="sheet"><div class="head"><h2>السلة</h2><button class="btn" onclick="closeM('cartModal')">إغلاق</button></div><div id="cart"></div></div></div>
+<div id="accountModal" class="overlay"><div class="sheet"><div class="head"><h2>حساب العميل</h2><button class="btn" onclick="closeM('accountModal')">إغلاق</button></div><div id="accountBody"></div></div></div>
+<div id="checkoutModal" class="overlay"><div class="sheet"><div class="head"><h2>تأكيد الطلب</h2><button class="btn" onclick="closeM('checkoutModal')">إغلاق</button></div><div id="checkout"></div></div></div>
+<script>
+const S={shops:[],offers:[],shop:null,cart:JSON.parse(localStorage.getItem('ho_cart')||'[]'),customer:JSON.parse(localStorage.getItem('ho_customer')||'null')};
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const money=v=>Number(v||0).toLocaleString('ar-EG')+' ج.م';
+async function api(url,opt={}){const r=await fetch(url,opt);const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'حدث خطأ');return d}
+function save(){localStorage.setItem('ho_cart',JSON.stringify(S.cart));$('count').textContent=S.cart.reduce((a,x)=>a+x.qty,0)}
+async function load(){const [a,b]=await Promise.all([api('/api/public/shops'),api('/api/public/offers')]);S.shops=a.shops||[];S.offers=b.offers||[];renderShops();renderOffers();save()}
+function renderShops(){ $('shopMeta').textContent=S.shops.length+' متجر'; $('shops').innerHTML='<button class="shop '+(S.shop===null?'active':'')+'" onclick="chooseShop(null)">الكل</button>'+S.shops.map(s=>'<button class="shop '+(S.shop===s.id?'active':'')+'" onclick="chooseShop('+s.id+')">'+esc(s.name)+'</button>').join('')}
+function chooseShop(id){S.shop=id;renderShops();renderOffers()}
+function renderOffers(){const list=S.offers.filter(x=>S.shop===null||Number(x.shopId)===Number(S.shop));$('offerMeta').textContent=list.length+' عرض';if(!list.length){$('offers').innerHTML='<div class="empty">لا توجد عروض متاحة الآن.</div>';return}$('offers').innerHTML=list.map(x=>{const disc=x.oldPrice>x.price?Math.round((1-x.price/x.oldPrice)*100):0;return '<div class="card"><div class="icon">🛍️</div><b>'+esc(x.name)+'</b><div class="muted" style="margin-top:5px">'+esc(x.shopName)+' · '+esc(x.city||'')+'</div><div style="margin-top:9px"><span class="price">'+money(x.price)+'</span>'+(x.oldPrice?'<span class="old">'+money(x.oldPrice)+'</span>':'')+(disc?'<div style="color:var(--green);font-size:12px;margin-top:4px">خصم '+disc+'%</div>':'')+'</div><div class="foot"><span class="muted">المتاح '+x.stock+'</span><button class="btn primary" onclick="add('+x.id+')">أضف للسلة</button></div></div>'}).join('')}
+function add(id){const p=S.offers.find(x=>Number(x.id)===Number(id));if(!p)return;if(S.cart.length&&Number(S.cart[0].shopId)!==Number(p.shopId)){alert('السلة لا تقبل منتجات من أكثر من متجر.');return}const x=S.cart.find(i=>Number(i.productId)===Number(id));if(x){if(x.qty>=p.stock)return alert('الكمية غير متاحة');x.qty++}else S.cart.push({productId:p.id,shopId:p.shopId,name:p.name,price:p.price,stock:p.stock,qty:1});save();openCart()}
+function qty(id,d){const x=S.cart.find(i=>Number(i.productId)===Number(id));if(!x)return;x.qty+=d;if(x.qty<=0)S.cart=S.cart.filter(i=>Number(i.productId)!==Number(id));if(x.qty>x.stock)x.qty=x.stock;save();renderCart()}
+function totals(){const sub=S.cart.reduce((a,x)=>a+x.price*x.qty,0);const sh=S.shops.find(s=>Number(s.id)===Number(S.cart[0]?.shopId));const del=Number(sh?.deliveryFee||0);return{sub,del,total:sub+del}}
+function openCart(){$('cartModal').classList.add('open');renderCart()}
+function renderCart(){if(!S.cart.length){$('cart').innerHTML='<div class="empty">السلة فاضية.</div>';return}const t=totals();$('cart').innerHTML=S.cart.map(x=>'<div class="row"><div><b>'+esc(x.name)+'</b><div class="muted">'+money(x.price)+'</div></div><div class="qty"><button onclick="qty('+x.productId+',-1)">−</button><b>'+x.qty+'</b><button onclick="qty('+x.productId+',1)">+</button></div><b>'+money(x.price*x.qty)+'</b></div>').join('')+'<div class="total"><div>الإجمالي الفرعي: '+money(t.sub)+'</div><div>التوصيل: '+money(t.del)+'</div><div>الإجمالي: '+money(t.total)+'</div></div><button class="btn primary" style="width:100%;margin-top:12px" onclick="checkout()">إتمام الطلب</button>'}
+function checkout(){if(!S.cart.length)return;closeM('cartModal');$('checkoutModal').classList.add('open');const c=S.customer||{};const t=totals();$('checkout').innerHTML='<div class="notice">الدفع المتاح حاليًا: <b>الدفع عند الاستلام</b></div><div class="form" style="margin-top:12px"><input id="on" value="'+esc(c.name||'')+'" placeholder="الاسم"><input id="op" value="'+esc(c.phone||'')+'" placeholder="رقم الهاتف"><input id="oc" value="'+esc(c.city||'')+'" placeholder="المدينة"><input id="oa" value="'+esc(c.address||'')+'" placeholder="العنوان"><input id="onotes" placeholder="ملاحظات"><div class="total">الإجمالي: '+money(t.total)+'</div><button class="btn primary" onclick="place()">إرسال الطلب</button></div><div id="checkoutMsg" style="margin-top:10px"></div>'}
+async function place(){try{const d=await api('/api/public/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customer:{name:$('on').value,phone:$('op').value,city:$('oc').value,address:$('oa').value,notes:$('onotes').value},items:S.cart.map(x=>({productId:x.productId,qty:x.qty})),paymentMethod:'cash'})});const o=d.order;S.customer={...S.customer,name:o.customer.name,phone:o.customer.phone,address:o.customer.address,city:$('oc').value};localStorage.setItem('ho_customer',JSON.stringify(S.customer));S.cart=[];save();$('checkout').innerHTML='<div class="notice success"><b>تم إرسال الطلب ✅</b><br>رقم الطلب: <b>'+esc(o.number)+'</b><br>الإجمالي: <b>'+money(o.total)+'</b></div><button class="btn primary" style="margin-top:12px" onclick="closeM(\'checkoutModal\');$(\'trackNo\').value=\''+esc(o.number)+'\';$(\'trackPhone\').value=\''+esc(o.customer.phone)+'\';track()">متابعة الطلب</button>'}catch(e){$('checkoutMsg').innerHTML='<div class="notice error">'+esc(e.message)+'</div>'}}
+async function track(){const n=$('trackNo').value.trim(),p=$('trackPhone').value.trim();if(!n||!p)return $('trackOut').innerHTML='<div class="notice error">اكتب رقم الطلب والهاتف.</div>';try{const d=await api('/api/public/orders/'+encodeURIComponent(n)+'?phone='+encodeURIComponent(p)),o=d.order;$('trackOut').innerHTML='<div class="notice success"><b>'+esc(o.number)+'</b><br>الحالة: <span class="status">'+status(o.status)+'</span><br>الإجمالي: <b>'+money(o.total)+'</b>'+(o.driverName?'<br>المندوب: <b>'+esc(o.driverName)+'</b>':'')+'</div>'}catch(e){$('trackOut').innerHTML='<div class="notice error">'+esc(e.message)+'</div>'}}
+function status(s){return({new:'طلب جديد',accepted:'تم قبول الطلب',preparing:'جاري التجهيز',ready:'جاهز للتوصيل',out_for_delivery:'خرج للتوصيل',completed:'تم التسليم',rejected:'مرفوض',cancelled:'ملغي'})[s]||s}
+function account(){$('accountModal').classList.add('open');renderAccount()}
+function renderAccount(){if(S.customer){$('accountBody').innerHTML='<div class="notice success"><b>'+esc(S.customer.name)+'</b><br>'+esc(S.customer.phone||'')+'<br>'+esc(S.customer.address||'')+'</div><button class="btn danger" style="margin-top:10px" onclick="logout()">تسجيل الخروج</button>';return}$('accountBody').innerHTML='<div class="section"><h3>دخول العميل</h3><div class="form"><input id="lp" placeholder="رقم الهاتف"><input id="lpass" type="password" placeholder="كلمة المرور"><button class="btn primary" onclick="login()">دخول</button></div></div><div class="section"><h3>حساب جديد</h3><div class="form"><input id="rn" placeholder="الاسم"><input id="rp" placeholder="رقم الهاتف"><input id="rpass" type="password" placeholder="كلمة المرور 6 أحرف على الأقل"><input id="rc" placeholder="المدينة"><input id="ra" placeholder="العنوان"><button class="btn dark" onclick="register()">إنشاء حساب</button></div></div><div id="accountMsg"></div>'}
+async function login(){try{const d=await api('/api/public/customer-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:$('lp').value,password:$('lpass').value})});S.customer=d.customer;localStorage.setItem('ho_customer',JSON.stringify(S.customer));localStorage.setItem('ho_customer_token',d.token);renderAccount()}catch(e){$('accountMsg').innerHTML='<div class="notice error">'+esc(e.message)+'</div>'}}
+async function register(){try{const d=await api('/api/public/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('rn').value,phone:$('rp').value,password:$('rpass').value,city:$('rc').value,address:$('ra').value})});S.customer=d.customer;localStorage.setItem('ho_customer',JSON.stringify(S.customer));renderAccount()}catch(e){$('accountMsg').innerHTML='<div class="notice error">'+esc(e.message)+'</div>'}}
+function logout(){S.customer=null;localStorage.removeItem('ho_customer');localStorage.removeItem('ho_customer_token');renderAccount()}
+function closeM(id){$(id).classList.remove('open')}
+document.querySelectorAll('.overlay').forEach(x=>x.addEventListener('click',e=>{if(e.target===x)x.classList.remove('open')}))
+load().catch(e=>$('offers').innerHTML='<div class="empty">'+esc(e.message)+'</div>');
+</script>
+</body>
+</html>
