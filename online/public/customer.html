@@ -163,7 +163,7 @@ async function registerCustomer(){const name=$('registerName').value.trim(),phon
 async function loginCustomer(){const phone=$('loginPhone').value.trim(),password=$('loginPassword').value;if(!phone||!password)return msg('loginMessage','أدخل رقم الهاتف وكلمة المرور');const b=$('loginBtn');b.disabled=true;b.textContent='جاري تسجيل الدخول...';try{const r=await fetch('/api/public/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({storeId:STORE_ID,phone,password})});const d=await r.json();if(!r.ok||!d.ok)return msg('loginMessage',d.message||'بيانات الدخول غير صحيحة');customerToken=d.token;customer=d.customer;localStorage.setItem('hesbah_customer_token',customerToken);localStorage.setItem('hesbah_customer',JSON.stringify(customer));openApp()}catch(e){console.error(e);msg('loginMessage','تعذر الاتصال بالسيرفر')}finally{b.disabled=false;b.textContent='تسجيل الدخول'}}
 function openApp(){$('authPage').classList.add('hidden');$('app').classList.remove('hidden');$('customerName').textContent=customer?.name||'العميل';if($('welcomeName'))$('welcomeName').textContent=customer?.name||'بالعميل';renderLatestOrder();goHome()}
 function goHome(){stopTracking();$('homePage').style.display='block';$('orderPage').classList.remove('active');$('orderPage').style.display='none';renderLatestOrder()}
-function startNewOrder(){stopTracking();window.pendingOrderData=null;window.checkoutCustomerLocation=null;cart=[];const home=$('homePage'),page=$('orderPage');$('cartModal').classList.add('hidden');$('modalTitle').textContent='سلة المشتريات';$('cartItems').innerHTML='';$('cartTotal').innerHTML='';$('checkoutBtn').classList.remove('hidden');$('checkoutBtn').disabled=true;updateCart();home.style.display='none';page.style.display='block';page.classList.add('active');$('products').innerHTML='<div class="empty">جاري تحميل المنتجات...</div>';loadProducts();page.scrollIntoView({behavior:'smooth',block:'start'});}
+async function startNewOrder(){stopTracking();window.pendingOrderData=null;window.checkoutCustomerLocation=null;cart=[];const home=$('homePage'),page=$('orderPage');$('cartModal').classList.add('hidden');$('modalTitle').textContent='سلة المشتريات';$('cartItems').innerHTML='';$('cartTotal').innerHTML='';$('checkoutBtn').classList.remove('hidden');$('checkoutBtn').disabled=true;updateCart();home.style.display='none';page.style.display='block';page.classList.add('active');$('products').innerHTML='<div class="empty">جاري تحميل المنتجات...</div>';await loadProducts();page.scrollIntoView({behavior:'smooth',block:'start'});}
 async function loadProducts(){const box=$('products');box.innerHTML='<div class="empty">جاري تحميل المنتجات...</div>';try{const r=await fetch('/api/public/products?storeId='+encodeURIComponent(STORE_ID)+'&_='+Date.now(),{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.message||'تعذر تحميل المنتجات');products=Array.isArray(d.products)?d.products:[];categories=Array.isArray(d.categories)&&d.categories.length?d.categories:['عام'];activeCategory='الكل';renderCategoryTabs();renderProducts()}catch(e){console.error(e);box.innerHTML='<div class="empty">تعذر تحميل المنتجات. حاول مرة أخرى.</div>';$('customerCategories').innerHTML=''}}
 
 function renderCategoryTabs(){const box=$('customerCategories');if(!box)return;const cats=['الكل',...categories.filter(c=>String(c).trim()&&String(c).trim()!=='الكل')];box.innerHTML=cats.map(c=>'<button type="button" class="category-tab '+(c===activeCategory?'active':'')+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join('');}
@@ -340,16 +340,14 @@ window.addEventListener('load',()=>{restore();setTimeout(()=>{if(customer)goHome
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&customer&&$('orderPage').classList.contains('active'))loadProducts()});
 </script>
 <script>
-function homeProductSearch(){
+async function homeProductSearch(){
   const q=(document.getElementById('homeSearch')?.value||'').trim();
-  startNewOrder();
-  setTimeout(()=>{
-    const input=document.querySelector('#products');
-    if(!q||!input)return;
-    input.querySelectorAll('.product').forEach(card=>{
-      card.style.display=card.innerText.toLowerCase().includes(q.toLowerCase())?'':'none';
-    });
-  },350);
+  await startNewOrder();
+  const input=document.querySelector('#products');
+  if(!q||!input)return;
+  input.querySelectorAll('.product').forEach(card=>{
+    card.style.display=card.innerText.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
 }
 </script><script>
 function setBottomNav(el){document.querySelectorAll('#bottomNav button').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active')}
