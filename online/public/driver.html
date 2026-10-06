@@ -180,7 +180,10 @@ function renderOrder(o){
     customerMap+
     '<div>💰 '+Number(o.total||0).toFixed(2)+' ج.م</div>'+
     '<div class="muted">الحالة: '+esc(o.status)+'</div>'+
-    (o.status==='out_for_delivery'?
+    (o.status==='ready'?
+      '<button class="start" onclick="startDelivery('+Number(o.id)+')">🛵 بدء التوصيل</button>'+
+      '<button class="secondary" onclick="openDriverChat('+Number(o.id)+')">💬 شات مع العميل</button>'
+      :o.status==='out_for_delivery'?
       '<button class="start" onclick="startTracking('+Number(o.id)+')">'+(tracking?'📡 التتبع يعمل':'📡 بدء إرسال موقعي')+'</button>'+
       '<button class="done" onclick="completeOrder('+Number(o.id)+')">✅ تم التوصيل</button>'+
       '<button class="secondary" onclick="openDriverChat('+Number(o.id)+')">💬 شات مع العميل</button>'
@@ -249,6 +252,16 @@ async function sendLocation(pos){
 function stopTracking(){
   if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}
   activeOrderId=null;gpsErrorShown=false;loadOrders();
+}
+
+async function startDelivery(orderId){
+  if(!confirm('بدء توصيل هذا الطلب الآن؟'))return;
+  try{
+    const r=await fetch('/api/public/driver/status-update',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({orderId:Number(orderId),status:'out_for_delivery'})});
+    const d=await r.json();
+    if(!r.ok||!d.ok)throw Error(d.message||'تعذر بدء التوصيل');
+    loadOrders();
+  }catch(e){alert(e.message)}
 }
 
 async function completeOrder(orderId){
