@@ -73,6 +73,15 @@ body{background:var(--ho-bg);color:var(--ho-ink)}
 .badge{background:#fff1e8;color:#c2410c}
 .footer{padding:22px}.ho-promo{display:flex;gap:10px;overflow:hidden;margin:15px 0}.ho-promo-card{min-width:220px;flex:1;background:#fff;border:1px solid var(--ho-line);border-radius:18px;padding:16px}.ho-promo-card b{display:block;font-size:15px;margin-bottom:5px}.ho-promo-card span{font-size:11px;color:#777}
 @media(max-width:650px){.container{padding:10px 11px 85px}.dashboard-actions{grid-template-columns:1fr 1fr}.action-card{padding:13px}.action-card h3{font-size:13px}.action-card small{font-size:10px}.action-icon{width:44px;height:44px;font-size:21px}.hero{min-height:205px;padding:21px}.hero h1{font-size:27px}.products{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.product-img{height:125px}.product-body{padding:9px}.product-name{font-size:13px}.price{font-size:15px}.unit{font-size:10px;margin-bottom:8px}.add{padding:9px;font-size:12px}.ho-promo{overflow-x:auto}.ho-promo-card{min-width:205px}.top{padding:9px 11px}}
+</style><style id="hesbah-offer-final">
+.auth{background:radial-gradient(circle at 80% 10%,rgba(255,107,0,.16),transparent 35%),#f7f7f7}
+.auth-card{border:1px solid #eee;box-shadow:0 20px 55px rgba(0,0,0,.08)}
+.brand span{color:#ff6b00}.tab.active{background:#171717}.field input:focus{border-color:#ff6b00;box-shadow:0 0 0 4px rgba(255,107,0,.1)}
+.bottom-nav{position:fixed;z-index:60;bottom:10px;left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 20px));display:flex;justify-content:space-around;gap:4px;padding:8px;background:rgba(255,255,255,.96);border:1px solid #e9e9e9;border-radius:18px;box-shadow:0 12px 35px rgba(0,0,0,.14);backdrop-filter:blur(14px)}
+.bottom-nav button{flex:1;border:0;background:transparent;border-radius:12px;padding:8px 5px;color:#777;font-size:11px;font-weight:800}
+.bottom-nav button span{display:block;font-size:19px;margin-bottom:2px}
+.bottom-nav button.active{background:#fff1e8;color:#e85d00}
+@media(min-width:800px){.bottom-nav{display:none}}
 </style></head>
 <body>
 <div id="authPage" class="auth">
@@ -130,7 +139,13 @@ body{background:var(--ho-bg);color:var(--ho-ink)}
     <div class="cartbar"><span>🛒 السلة: <span id="cartCount" class="cart-count">0</span></span><button class="btn primary" onclick="openCart()">فتح السلة</button></div>
   </section>
 </main>
-<footer class="footer">Hesbah Online</footer>
+<footer class="footer">Hesbah Offer</footer><nav class="bottom-nav" id="bottomNav">
+<button class="active" onclick="goHome();setBottomNav(this)"><span>⌂</span>الرئيسية</button>
+<button onclick="startNewOrder();setBottomNav(this)"><span>▦</span>الأقسام</button>
+<button onclick="showLatestOrder();setBottomNav(this)"><span>▣</span>طلباتي</button>
+<button onclick="openCart();setBottomNav(this)"><span>🛒</span>السلة</button>
+<button onclick="logoutCustomer()"><span>◉</span>حسابي</button>
+</nav>
 </div>
 
 <div id="cartModal" class="modal hidden" onclick="if(event.target===this)closeCart()"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">سلة المشتريات</h2><button class="close" onclick="closeCart()">×</button></div><div id="cartItems"></div><div id="cartTotal" class="total"></div><button id="checkoutBtn" class="btn primary wide" onclick="checkout()">متابعة الطلب</button></div></div>
@@ -336,6 +351,8 @@ function homeProductSearch(){
     });
   },350);
 }
+</script><script>
+function setBottomNav(el){document.querySelectorAll('#bottomNav button').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active')}
 </script></body>
 </html>
 
