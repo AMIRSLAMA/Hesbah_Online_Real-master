@@ -15,7 +15,7 @@ const KEY = "amircasher_db_v1";
 
 const defaults = {
   shop:{name:"متجري",phone:"",address:"",device:"جهاز",logo:""},
-  online:{enabled:false,url:"",storeId:"demo",autoSync:false},
+  online:{enabled:true,url:"https://hesbah-server.tail957349.ts.net",storeId:"demo",autoSync:true},
   owner:{name:"المهندس امير سلامه خلف الله",phone:"01284321280"},
   printer:{copies:1,drawer:false,printer:"النظام الافتراضي",prep:false},
   activation:{status:"تجريبي",code:"",customer:""},
