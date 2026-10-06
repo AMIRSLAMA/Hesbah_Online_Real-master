@@ -1309,7 +1309,9 @@ const incomingCategories=Array.isArray(incoming.categories)?incoming.categories:
 incoming.categories=[...new Set([...serverCategories,...incomingCategories].map(c=>String(c||"").trim()).filter(Boolean))];
 if(!incoming.categories.length)incoming.categories=["عام"];
 // Online-owned data must never be lost when a POS syncs its local database.
-// Orders and delivery drivers are created/updated by the web/customer side and must remain server-authoritative.
+// Customers, orders and delivery drivers are created/updated by the web/customer side
+// and must remain server-authoritative. Never let an older POS snapshot erase them.
+incoming.customers=Array.isArray(db.customers)?db.customers:[];
 incoming.orders=Array.isArray(db.orders)?db.orders:[];
 incoming.drivers=Array.isArray(db.drivers)?db.drivers:[];
 // Payment and delivery settings are server-owned.
