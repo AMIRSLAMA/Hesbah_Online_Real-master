@@ -267,7 +267,7 @@ async function startDelivery(orderId){
 async function completeOrder(orderId){
   if(!confirm('تأكيد أن الطلب تم توصيله للعميل؟'))return;
   try{
-    const r=await fetch('/api/public/driver/status-update',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({orderId:Number(orderId)})});
+    const r=await fetch('/api/public/driver/status-update',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({orderId:Number(orderId),status:'completed'})});
     const d=await r.json();if(!r.ok||!d.ok)throw Error(d.message||'تعذر إنهاء الطلب');
     if(Number(activeOrderId)===Number(orderId))stopTracking();else loadOrders();
   }catch(e){alert(e.message)}
