@@ -122,6 +122,36 @@ const DEMO={
     }
   }
 };
+function ensureDemoData(storeId,db){
+  if(String(storeId)!=='demo') return db;
+  let changed=false;
+  if(!Array.isArray(db.customers)) db.customers=[];
+  if(!db.customers.some(c=>normalizePhone(c.phone)==='01000000001')){
+    db.customers.push({
+      id:1001,name:'عميل تجريبي',phone:'01000000001',
+      passwordHash:hash('123456'),address:'الجيزة',city:'الجيزة',
+      createdAt:new Date().toISOString(),ordersCount:0,totalSpent:0
+    });
+    changed=true;
+  }
+  if(!Array.isArray(db.drivers)) db.drivers=[];
+  if(!db.drivers.some(d=>String(d.username||'').toLowerCase()==='amir')){
+    db.drivers.push({
+      id:1001,userId:1001,name:'أحمد مندوب تجريبي',username:'amir',
+      phone:'01100000001',passwordHash:hash('123456'),active:true,
+      createdAt:new Date().toISOString()
+    });
+    changed=true;
+  }
+  if(!db.paymentSettings || typeof db.paymentSettings!=='object'){
+    db.paymentSettings=structuredClone(DEMO.paymentSettings); changed=true;
+  }
+  if(!db.paymentSettings.delivery || typeof db.paymentSettings.delivery!=='object'){
+    db.paymentSettings.delivery={enabled:true,name:'رسوم التوصيل',fee:0}; changed=true;
+  }
+  if(changed){db.revision=(db.revision||1)+1;save(storeId,db);}
+  return db;
+}
 function normalizePhone(v){return String(v??'').replace(/[٠-٩۰-۹]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)>=0?'٠١٢٣٤٥٦٧٨٩'.indexOf(d):'۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[\s\-().]/g,'').trim()}
 function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
 function storeFile(id){return path.join(DATA,encodeURIComponent(id)+'.json')}
@@ -160,13 +190,13 @@ if(p==='/driver'||p==='/delivery') return res.writeHead(302,{'Location':'/driver
 if(p==='/dashboard'||p==='/dashboard/') return serveDashboardStatic(req,res);
 if(p.startsWith('/dashboard/')) return serveDashboardStatic(req,res);
 if(!p.startsWith('/api/')) return serveStatic(req,res);
-if(p==='/api/login'&&req.method==='POST'){const b=await body(req);const sid=String(b.storeId||'demo').trim()||'demo',db=load(sid),user=db.users.find(x=>String(x.username).toLowerCase()===String(b.username||'').trim().toLowerCase());if(!user||user.passwordHash!==hash(b.password||''))return json(res,401,{ok:false,message:'بيانات الدخول غير صحيحة'});const token=sign({storeId:sid,userId:user.id,role:user.role,exp:Date.now()+7*86400000});return json(res,200,{ok:true,token,user:safeUser(user),store:{name:db.shop.name},revision:db.revision||1})}
+if(p==='/api/login'&&req.method==='POST'){const b=await body(req);const sid=String(b.storeId||'demo').trim()||'demo',db=ensureDemoData(sid,load(sid)),user=db.users.find(x=>String(x.username).toLowerCase()===String(b.username||'').trim().toLowerCase());if(!user||user.passwordHash!==hash(b.password||''))return json(res,401,{ok:false,message:'بيانات الدخول غير صحيحة'});const token=sign({storeId:sid,userId:user.id,role:user.role,exp:Date.now()+7*86400000});return json(res,200,{ok:true,token,user:safeUser(user),store:{name:db.shop.name},revision:db.revision||1})}
 if(!p.startsWith('/api/'))return serveStatic(req,res);
 if(p==='/api/public/orders'&&req.method==='POST'){
   const b=await body(req);
 
   const storeId=String(b.storeId||'demo').trim()||'demo';
-  const db=load(storeId);
+  const db=ensureDemoData(storeId,load(storeId));
 
   const items=Array.isArray(b.items)
     ? b.items.map(x=>({
@@ -174,7 +204,7 @@ if(p==='/api/public/orders'&&req.method==='POST'){
         code:String(x.code||''),
         name:String(x.name||''),
         price:Number(x.price||0),
-        qty:Number(x.qty||0)
+        qty:Number(x.qty ?? x.quantity ?? 0)
       })).filter(x=>x.qty>0)
     : [];
 
@@ -372,7 +402,7 @@ if(p==='/api/public/orders/add-items'&&req.method==='POST'){
     b.storeId||'demo'
   ).trim()||'demo';
 
-  const db=load(storeId);
+  const db=ensureDemoData(storeId,load(storeId));
 
   const customerToken=String(
     req.headers.authorization||""
@@ -736,7 +766,7 @@ if(p==='/api/public/customer/session'&&req.method==='GET'){
 if(p==='/api/public/driver/login'&&req.method==='POST'){
   const b=await body(req);
   const storeId=String(b.storeId||'demo').trim()||'demo';
-  const db=load(storeId);
+  const db=ensureDemoData(storeId,load(storeId));
   const username=String(b.username||'').trim();
   const password=String(b.password||'');
   const driver=Array.isArray(db.drivers)
@@ -766,7 +796,7 @@ if(p==='/api/public/driver/login'&&req.method==='POST'){
 if(p==='/api/public/driver/orders'&&req.method==='GET'){
   const a=auth(req);
   if(!a||a.role!=='driver_account') return json(res,401,{ok:false,message:'جلسة المندوب غير صالحة'});
-  const db=load(a.storeId);
+  const db=ensureDemoData(a.storeId,load(a.storeId));
   const orders=(db.orders||[]).filter(x=>Number(x.driverId)===Number(a.driverId)&&!['completed','rejected'].includes(x.status));
   return json(res,200,{ok:true,orders});
 }
@@ -776,7 +806,7 @@ if(p==='/api/public/driver/status-update'&&req.method==='PUT'){
   if(!a||a.role!=='driver_account') return json(res,401,{ok:false,message:'جلسة المندوب غير صالحة'});
   const b=await body(req);
   const orderId=Number(b.orderId||0);
-  const db=load(a.storeId);
+  const db=ensureDemoData(a.storeId,load(a.storeId));
   const order=(db.orders||[]).find(x=>Number(x.id)===orderId);
   if(!order) return json(res,404,{ok:false,message:'الطلب غير موجود'});
   if(Number(order.driverId)!==Number(a.driverId)) return json(res,403,{ok:false,message:'الطلب غير مسند إليك'});
@@ -1050,12 +1080,12 @@ if(p==='/api/public/payment-methods'&&req.method==='GET'){
   u.query?.storeId || 'demo'
 ).trim() || 'demo';
 
-  const db=load(storeId);
+  const db=ensureDemoData(storeId,load(storeId));
 
   // Keep legacy stores compatible with delivery-fee settings.
   if(!db.paymentSettings || typeof db.paymentSettings!=='object') db.paymentSettings={};
   if(!db.paymentSettings.delivery || typeof db.paymentSettings.delivery!=='object'){
-    db.paymentSettings.delivery={enabled:true,name:'رسوم التوصيل',fee:35};
+    db.paymentSettings.delivery={enabled:true,name:'رسوم التوصيل',fee:0};
     db.revision=(db.revision||1)+1;
     save(storeId,db);
   }
@@ -1126,7 +1156,7 @@ if(p==='/api/public/products'&&req.method==='GET'){
     u.query?.storeId || 'demo'
   ).trim() || 'demo';
 
-  const db=load(storeId);
+  const db=ensureDemoData(storeId,load(storeId));
 
   const products=Array.isArray(db.products)
     ? db.products
@@ -1478,7 +1508,7 @@ incoming.revision=(db.revision||1)+1;for(const u of incomingUsers){if(String(u.r
 if(p==='/api/drivers'&&req.method==='GET'){
   const a=auth(req);
   if(!a) return json(res,401,{ok:false,message:'غير مصرح'});
-  const db=load(a.storeId);
+  const db=ensureDemoData(a.storeId,load(a.storeId));
   const orders=Array.isArray(db.orders)?db.orders:[];
   // Keep delivery representatives created from Users & Permissions visible here.
   // Older data may have the role "مندوب توصيل" in users but no matching db.drivers record.
@@ -1570,7 +1600,7 @@ if(p==='/api/orders/assign-driver'&&req.method==='PUT'){
   const b=await body(req);
   const orderId=Number(b.orderId||0);
   const driverId=Number(b.driverId||0);
-  const db=load(a.storeId);
+  const db=ensureDemoData(a.storeId,load(a.storeId));
   // Migrate a delivery user into the driver table on first assignment.
   if(!Array.isArray(db.drivers)) db.drivers=[];
   const userDriver=Array.isArray(db.users)
