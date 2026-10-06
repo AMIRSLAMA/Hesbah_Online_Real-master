@@ -123,33 +123,30 @@ const DEMO={
   }
 };
 function ensureDemoData(storeId,db){
-  if(String(storeId)!=='demo') return db;
+  // Keep existing store data as-is. Do NOT create demo customers or drivers.
+  // Real customer accounts are created by /api/public/register.
+  // Real delivery accounts are created from Users & Permissions and synced
+  // into the drivers table so the same account can log in from driver.html.
   let changed=false;
-  if(!Array.isArray(db.customers)) db.customers=[];
-  if(!db.customers.some(c=>normalizePhone(c.phone)==='01000000001')){
-    db.customers.push({
-      id:1001,name:'عميل تجريبي',phone:'01000000001',
-      passwordHash:hash('123456'),address:'الجيزة',city:'الجيزة',
-      createdAt:new Date().toISOString(),ordersCount:0,totalSpent:0
-    });
-    changed=true;
-  }
-  if(!Array.isArray(db.drivers)) db.drivers=[];
-  if(!db.drivers.some(d=>String(d.username||'').toLowerCase()==='amir')){
-    db.drivers.push({
-      id:1001,userId:1001,name:'أحمد مندوب تجريبي',username:'amir',
-      phone:'01100000001',passwordHash:hash('123456'),active:true,
-      createdAt:new Date().toISOString()
-    });
-    changed=true;
-  }
+
+  if(!Array.isArray(db.customers)){db.customers=[];changed=true;}
+  if(!Array.isArray(db.drivers)){db.drivers=[];changed=true;}
+
   if(!db.paymentSettings || typeof db.paymentSettings!=='object'){
-    db.paymentSettings=structuredClone(DEMO.paymentSettings); changed=true;
+    db.paymentSettings=structuredClone(DEMO.paymentSettings);
+    changed=true;
   }
+
   if(!db.paymentSettings.delivery || typeof db.paymentSettings.delivery!=='object'){
-    db.paymentSettings.delivery={enabled:true,name:'رسوم التوصيل',fee:0}; changed=true;
+    db.paymentSettings.delivery={enabled:true,name:'رسوم التوصيل',fee:0};
+    changed=true;
   }
-  if(changed){db.revision=(db.revision||1)+1;save(storeId,db);}
+
+  if(changed){
+    db.revision=(db.revision||1)+1;
+    save(storeId,db);
+  }
+
   return db;
 }
 function normalizePhone(v){return String(v??'').replace(/[٠-٩۰-۹]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)>=0?'٠١٢٣٤٥٦٧٨٩'.indexOf(d):'۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[\s\-().]/g,'').trim()}
