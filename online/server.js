@@ -810,13 +810,23 @@ if(p==='/api/public/driver/status-update'&&req.method==='PUT'){
   const order=(db.orders||[]).find(x=>Number(x.id)===orderId);
   if(!order) return json(res,404,{ok:false,message:'الطلب غير موجود'});
   if(Number(order.driverId)!==Number(a.driverId)) return json(res,403,{ok:false,message:'الطلب غير مسند إليك'});
-  if(order.status!=='out_for_delivery') return json(res,409,{ok:false,message:'الطلب ليس في مرحلة التوصيل'});
-  order.status='completed';
+  const requestedStatus=String(b.status||'completed').trim();
+  const allowed =
+    (order.status==='ready' && requestedStatus==='out_for_delivery') ||
+    (order.status==='out_for_delivery' && requestedStatus==='completed');
+  if(!allowed){
+    return json(res,409,{ok:false,message:'لا يمكن للمندوب تغيير حالة الطلب من '+String(order.status||'new')+' إلى '+requestedStatus});
+  }
+  order.status=requestedStatus;
   order.statusUpdatedAt=new Date().toISOString();
-  order.trackingActive=false;
+  if(requestedStatus==='out_for_delivery'){
+    order.trackingActive=false;
+  }else{
+    order.trackingActive=false;
+  }
   db.revision=(db.revision||1)+1;
   save(a.storeId,db);
-  return json(res,200,{ok:true,order:{id:order.id,status:order.status}});
+  return json(res,200,{ok:true,order:{id:order.id,status:order.status,statusUpdatedAt:order.statusUpdatedAt}});
 }
 
 if(p==='/api/public/driver/location-account'&&req.method==='PUT'){
