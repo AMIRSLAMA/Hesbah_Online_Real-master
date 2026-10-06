@@ -1386,7 +1386,7 @@ incoming.revision=(db.revision||1)+1;for(const u of incomingUsers){if(String(u.r
   );
 
   const transitions={
-    new:['accepted','rejected'],
+    new:['accepted','preparing','ready','rejected'],
     accepted:['preparing'],
     preparing:['ready'],
     ready:['out_for_delivery','completed'],
