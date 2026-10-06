@@ -68,8 +68,8 @@
   const KEY="hesbah_customer_order_url";
   // Public Hesbah customer URL used by the QR code.
   // Keep this public so QR codes never point to the manager's LAN address.
-  const PUBLIC_CUSTOMER_BASE="https://hesbah-server.tail957349.ts.net";
-  const DEFAULT_URL=PUBLIC_CUSTOMER_BASE+"/customer.html?storeId=demo";
+  // Use the same public origin that served the dashboard, so QR links follow the active server URL automatically.
+  const DEFAULT_URL=location.origin+"/customer.html?storeId=demo";
 
   function customerUrl(){
     const saved=localStorage.getItem(KEY);
