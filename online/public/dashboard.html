@@ -66,10 +66,18 @@
 (function(){
   "use strict";
   const KEY="hesbah_customer_order_url";
-  const DEFAULT_URL="http://192.168.0.100:8080/customer.html?storeId=demo";
+  // Public Hesbah customer URL used by the QR code.
+  // Keep this public so QR codes never point to the manager's LAN address.
+  const PUBLIC_CUSTOMER_BASE="https://hesbah-server.tail957349.ts.net";
+  const DEFAULT_URL=PUBLIC_CUSTOMER_BASE+"/customer.html?storeId=demo";
 
   function customerUrl(){
-    return localStorage.getItem(KEY) || DEFAULT_URL;
+    const saved=localStorage.getItem(KEY);
+    // Replace legacy/local-only URLs with the current public address.
+    if(!saved || /^(https?:\/\/)?(127\.0\.0\.1|localhost|192\.168\.0\.100)(:\d+)?\b/i.test(saved) || /trycloudflare\.com/i.test(saved)){
+      return DEFAULT_URL;
+    }
+    return saved;
   }
 
   function patchQR(){
