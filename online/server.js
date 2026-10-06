@@ -154,6 +154,9 @@ if(p==='/'||p===''){
   return res.end();
 }
 if(p==='/api/health')return json(res,200,{ok:true,service:'Hesbah Online',time:new Date().toISOString()});
+// Public customer and delivery pages stay on the same 8080/Tailscale origin.
+if(p==='/customer') return res.writeHead(302,{'Location':'/customer.html'}),res.end();
+if(p==='/driver'||p==='/delivery') return res.writeHead(302,{'Location':'/driver.html'}),res.end();
 if(p==='/dashboard'||p==='/dashboard/') return serveDashboardStatic(req,res);
 if(p.startsWith('/dashboard/')) return serveDashboardStatic(req,res);
 if(!p.startsWith('/api/')) return serveStatic(req,res);
