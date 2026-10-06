@@ -281,10 +281,14 @@ const customer={
           ' — المتاح '+stock
       });
     }
+    // Never trust price/name/code sent by the browser; the server product record is authoritative.
+    item.code=String(product.code||'');
+    item.name=String(product.name||'');
+    item.price=Number(product.price||0);
   }
 
   const subtotal=items.reduce(
-    (sum,x)=>sum+(x.price*x.qty),0
+    (sum,x)=>sum+(Number(x.price||0)*Number(x.qty||0)),0
   );
 
   const deliverySettings=db.paymentSettings?.delivery||DEMO.paymentSettings.delivery;
@@ -1408,6 +1412,10 @@ incoming.revision=(db.revision||1)+1;for(const u of incomingUsers){if(String(u.r
 
   // Stock was reserved when the online order was created.
   // Return it exactly once if the manager rejects the order.
+  if(newStatus==='out_for_delivery' && String(order.type||'delivery')==='delivery' && !Number(order.driverId||0)){
+    return json(res,409,{ok:false,message:'يجب تعيين مندوب للطلب قبل إرساله للتوصيل'});
+  }
+
   if(newStatus==='rejected' && currentStatus!=='rejected' && !order.stockReleased){
     for(const item of (Array.isArray(order.items)?order.items:[])){
       const product=Array.isArray(db.products)
