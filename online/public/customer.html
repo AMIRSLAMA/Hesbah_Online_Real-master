@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Hesbah | حسبة أونلاين</title>
+<title>Hesbah Offer | حسبة أوفر</title>
 <style>
 :root{--bg:#07111f;--panel:rgba(255,255,255,.92);--text:#0f172a;--muted:#64748b;--primary:#2563eb;--primary2:#06b6d4;--success:#16a34a;--danger:#dc2626;--line:#e2e8f0;--shadow:0 24px 70px rgba(2,8,23,.22)}
 *{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;color:var(--text);background:radial-gradient(circle at 15% 10%,#164e63 0,#07111f 35%,#020617 100%);min-height:100vh}button,input{font:inherit}button{cursor:pointer}.hidden{display:none!important}
@@ -39,6 +39,40 @@
   .chat-input button{flex-basis:72px;width:72px}
 }
 .map{height:280px;border-radius:14px;margin-top:12px;overflow:hidden;border:1px solid #e2e8f0}
+</style><style id="hesbah-offer-redesign">
+:root{--ho-orange:#ff6b00;--ho-orange2:#ff8a00;--ho-ink:#171717;--ho-bg:#f7f7f7;--ho-line:#ececec;--ho-muted:#737373}
+body{background:var(--ho-bg);color:var(--ho-ink)}
+.app{background:var(--ho-bg)}
+.top{background:#fff;color:var(--ho-ink);border-bottom:1px solid var(--ho-line);padding:10px 16px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.top-brand{color:var(--ho-ink)}.top-brand span{color:var(--ho-orange)}
+.user-name{color:#666}.top .ghost{background:#fff;border:1px solid #ddd}
+.container{max-width:1200px;padding:14px 16px 90px}
+.ho-location{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-radius:16px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--ho-line)}
+.ho-location-main{display:flex;align-items:center;gap:10px}.ho-pin{width:38px;height:38px;border-radius:12px;background:#fff1e8;display:grid;place-items:center;font-size:20px}
+.ho-location small{display:block;color:#888;font-size:10px}.ho-location b{font-size:13px}
+.ho-search{display:flex;align-items:center;gap:9px;background:#f1f1f1;border:1px solid #e7e7e7;border-radius:14px;padding:2px 13px;margin-bottom:14px}
+.ho-search span{font-size:24px;color:#888}.ho-search input{width:100%;border:0;outline:0;background:transparent;padding:11px 2px;font-size:14px}
+.ho-cats{display:flex;gap:9px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:none}.ho-cats::-webkit-scrollbar{display:none}
+.ho-cat{flex:0 0 auto;border:1px solid #e5e5e5;background:#fff;border-radius:12px;padding:10px 15px;font-weight:800;color:#555}.ho-cat.active{background:var(--ho-orange);border-color:var(--ho-orange);color:#fff}
+.hero{border-radius:24px;padding:25px 26px;background:linear-gradient(105deg,#191919,#2b2b2b 60%,#ff6b00);box-shadow:0 16px 35px rgba(0,0,0,.12);min-height:210px}
+.hero h1{font-size:32px}.hero p{color:#eee}.hero:after{background:rgba(255,255,255,.06)}
+.hero .ho-badge{display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);padding:6px 10px;border-radius:99px;font-size:11px}
+.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.action-card{border:1px solid var(--ho-line);border-radius:18px;box-shadow:0 6px 20px rgba(0,0,0,.05);padding:17px;background:#fff}
+.action-icon{background:#fff1e8}.action-card h3{font-size:15px}.action-card small{font-size:11px}
+.section-head{margin-bottom:10px}.section-head h2{font-size:20px}
+.ho-section-label{font-size:11px;color:var(--ho-orange);font-weight:900}
+.products{grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
+.product{border:1px solid var(--ho-line);border-radius:18px;box-shadow:0 6px 20px rgba(0,0,0,.05)}
+.product-img{height:165px;background:linear-gradient(135deg,#fff3e8,#fff8f2)}
+.product-body{padding:13px}.product-name{font-size:16px}.price{color:var(--ho-orange)}.add{background:linear-gradient(135deg,var(--ho-orange),var(--ho-orange2));border-radius:11px}
+.category-tabs{gap:8px}.category-tab{border-radius:12px;padding:9px 14px}.category-tab.active{background:var(--ho-orange);border-color:var(--ho-orange)}
+.cartbar{background:var(--ho-ink);border-radius:16px}
+.primary{background:linear-gradient(135deg,var(--ho-orange),var(--ho-orange2));box-shadow:0 8px 18px rgba(255,107,0,.2)}
+.success{background:linear-gradient(135deg,#16a34a,#059669)}
+.badge{background:#fff1e8;color:#c2410c}
+.footer{padding:22px}.ho-promo{display:flex;gap:10px;overflow:hidden;margin:15px 0}.ho-promo-card{min-width:220px;flex:1;background:#fff;border:1px solid var(--ho-line);border-radius:18px;padding:16px}.ho-promo-card b{display:block;font-size:15px;margin-bottom:5px}.ho-promo-card span{font-size:11px;color:#777}
+@media(max-width:650px){.container{padding:10px 11px 85px}.dashboard-actions{grid-template-columns:1fr 1fr}.action-card{padding:13px}.action-card h3{font-size:13px}.action-card small{font-size:10px}.action-icon{width:44px;height:44px;font-size:21px}.hero{min-height:205px;padding:21px}.hero h1{font-size:27px}.products{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.product-img{height:125px}.product-body{padding:9px}.product-name{font-size:13px}.price{font-size:15px}.unit{font-size:10px;margin-bottom:8px}.add{padding:9px;font-size:12px}.ho-promo{overflow-x:auto}.ho-promo-card{min-width:205px}.top{padding:9px 11px}}
 </style></head>
 <body>
 <div id="authPage" class="auth">
@@ -61,16 +95,33 @@
 </div>
 
 <div id="app" class="app hidden">
-<header class="top"><div class="top-inner"><div class="top-brand">Hes<span>bah</span></div><div class="user-actions"><span id="customerName" class="user-name"></span><button class="btn ghost" onclick="logoutCustomer()">خروج</button></div></div></header>
+<header class="top"><div class="top-inner"><div class="top-brand">حسبة <span>أوفر</span></div><div class="user-actions"><span id="customerName" class="user-name"></span><button class="btn ghost" onclick="logoutCustomer()">خروج</button></div></div></header>
 <main class="container">
   <section id="homePage">
-    <div class="hero"><h1>أهلاً بك 👋</h1><p>مرحباً <strong id="welcomeName">بالعميل</strong> — اختر ما تريد واطلبه في دقائق.</p></div>
-    <div class="dashboard-actions">
-      <button class="action-card" onclick="startNewOrder()"><span class="action-icon">🛒</span><span><h3>تسجيل طلب جديد</h3><small>ابدأ اختيار المنتجات وأرسل طلبك</small></span></button>
-      <button class="action-card" onclick="showLatestOrder()"><span class="action-icon">📦</span><span><h3>متابعة آخر طلب</h3><small>اعرف حالة الطلب والدليفري</small></span></button>
-    </div>
-    <section class="section"><div class="section-head"><h2>آخر طلب</h2></div><div id="latestOrder" class="orders-box"></div></section>
-  </section>
+  <div class="ho-location">
+    <div class="ho-location-main"><span class="ho-pin">📍</span><div><small>التوصيل إلى</small><b id="homeAddress">عنوان التوصيل الخاص بك</b></div></div>
+    <button class="btn ghost" style="padding:9px 11px" onclick="startNewOrder()">تغيير</button>
+  </div>
+  <div class="ho-search"><span>⌕</span><input id="homeSearch" placeholder="ابحث عن منتج أو عرض..." oninput="homeProductSearch()"></div>
+  <div class="ho-cats">
+    <button class="ho-cat active" onclick="startNewOrder()">🔥 العروض</button>
+    <button class="ho-cat" onclick="startNewOrder()">🛒 بقالة</button>
+    <button class="ho-cat" onclick="startNewOrder()">🥤 مشروبات</button>
+    <button class="ho-cat" onclick="startNewOrder()">🍔 أكل</button>
+    <button class="ho-cat" onclick="startNewOrder()">🏠 منزل</button>
+  </div>
+  <div class="hero"><span class="ho-badge">🔥 حسبة أوفر</span><h1>اشتري أوفر<br>واطلب أسهل.</h1><p>اختار منتجاتك، ابعت الطلب، وخليه يوصل لحد باب بيتك.</p></div>
+  <div class="ho-promo">
+    <div class="ho-promo-card"><b>⚡ عروض اليوم</b><span>أسعار مميزة على المنتجات المتاحة.</span></div>
+    <div class="ho-promo-card"><b>🛵 توصيل للباب</b><span>تابع طلبك وحركة المندوب.</span></div>
+    <div class="ho-promo-card"><b>💳 طرق دفع متعددة</b><span>اختر الطريقة المتاحة عند المتجر.</span></div>
+  </div>
+  <div class="dashboard-actions">
+    <button class="action-card" onclick="startNewOrder()"><span class="action-icon">🛒</span><span><h3>اطلب الآن</h3><small>تصفح المنتجات وأضفها للسلة</small></span></button>
+    <button class="action-card" onclick="showLatestOrder()"><span class="action-icon">📦</span><span><h3>متابعة الطلب</h3><small>اعرف حالة الطلب والمندوب</small></span></button>
+  </div>
+  <section class="section"><div class="section-head"><div><span class="ho-section-label">طلباتك</span><h2>آخر طلب</h2></div></div><div id="latestOrder" class="orders-box"></div></section>
+</section>
 
   <section id="orderPage" class="order-page">
     <div class="order-toolbar"><button class="btn ghost back-btn" onclick="goHome()">← العودة</button><h2>🛍️ تسجيل طلب جديد</h2><span></span></div>
@@ -273,7 +324,19 @@ function restore(){try{const t=localStorage.getItem('hesbah_customer_token'),c=l
 window.addEventListener('load',()=>{restore();setTimeout(()=>{if(customer)goHome()},50)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&customer&&$('orderPage').classList.contains('active'))loadProducts()});
 </script>
-</body>
+<script>
+function homeProductSearch(){
+  const q=(document.getElementById('homeSearch')?.value||'').trim();
+  startNewOrder();
+  setTimeout(()=>{
+    const input=document.querySelector('#products');
+    if(!q||!input)return;
+    input.querySelectorAll('.product').forEach(card=>{
+      card.style.display=card.innerText.toLowerCase().includes(q.toLowerCase())?'':'none';
+    });
+  },350);
+}
+</script></body>
 </html>
 
 
