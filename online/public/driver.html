@@ -180,6 +180,14 @@ function renderOrder(o){
     customerMap+
     '<div>💰 '+Number(o.total||0).toFixed(2)+' ج.م</div>'+
     '<div class="muted">الحالة: '+esc(o.status)+'</div>'+
+    (o.status==='ready'?
+      '<button class="start" onclick="driverStatusUpdate('+Number(o.id)+',\'driver_received\')">📦 استلمت الطلب</button>'+
+      '<button class="secondary" onclick="openDriverChat('+Number(o.id)+')">💬 شات مع العميل</button>'
+      :'')+
+    (o.status==='driver_received'?
+      '<button class="start" onclick="driverStatusUpdate('+Number(o.id)+',\'out_for_delivery\')">🚴 خرجت للتوصيل</button>'+
+      '<button class="secondary" onclick="openDriverChat('+Number(o.id)+')">💬 شات مع العميل</button>'
+      :'')+
     (o.status==='out_for_delivery'?
       '<button class="start" onclick="startTracking('+Number(o.id)+')">'+(tracking?'📡 التتبع يعمل':'📡 بدء إرسال موقعي')+'</button>'+
       '<button class="done" onclick="completeOrder('+Number(o.id)+')">✅ تم التوصيل</button>'+
@@ -249,6 +257,19 @@ async function sendLocation(pos){
 function stopTracking(){
   if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}
   activeOrderId=null;gpsErrorShown=false;loadOrders();
+}
+
+async function driverStatusUpdate(orderId,status){
+  try{
+    const r=await fetch('/api/public/driver/status-update',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+      body:JSON.stringify({orderId:Number(orderId),status})
+    });
+    const d=await r.json();
+    if(!r.ok||!d.ok) throw Error(d.message||'تعذر تحديث حالة الطلب');
+    await loadOrders();
+  }catch(e){alert(e.message)}
 }
 
 async function completeOrder(orderId){
