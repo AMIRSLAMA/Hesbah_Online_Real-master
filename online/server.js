@@ -772,10 +772,35 @@ if(p==='/api/public/driver/status-update'&&req.method==='PUT'){
   const order=(db.orders||[]).find(x=>Number(x.id)===orderId);
   if(!order) return json(res,404,{ok:false,message:'الطلب غير موجود'});
   if(Number(order.driverId)!==Number(a.driverId)) return json(res,403,{ok:false,message:'الطلب غير مسند إليك'});
-  if(order.status!=='out_for_delivery') return json(res,409,{ok:false,message:'الطلب ليس في مرحلة التوصيل'});
-  order.status='completed';
-  order.statusUpdatedAt=new Date().toISOString();
-  order.trackingActive=false;
+  const nextStatus=String(b.status||'').trim();
+  const currentStatus=String(order.status||'new');
+
+  if(nextStatus==='driver_received'){
+    if(!['ready','driver_received'].includes(currentStatus)){
+      return json(res,409,{ok:false,message:'الطلب غير جاهز للاستلام من المندوب'});
+    }
+    order.status='driver_received';
+    order.driverReceivedAt=order.driverReceivedAt||new Date().toISOString();
+    order.statusUpdatedAt=new Date().toISOString();
+  }else if(nextStatus==='out_for_delivery'){
+    if(!['driver_received','ready'].includes(currentStatus)){
+      return json(res,409,{ok:false,message:'يجب استلام الطلب أولاً'});
+    }
+    order.status='out_for_delivery';
+    order.outForDeliveryAt=new Date().toISOString();
+    order.statusUpdatedAt=new Date().toISOString();
+    order.trackingActive=true;
+  }else if(nextStatus==='completed'){
+    if(!['out_for_delivery','driver_received'].includes(currentStatus)){
+      return json(res,409,{ok:false,message:'الطلب ليس مع المندوب للتسليم'});
+    }
+    order.status='completed';
+    order.statusUpdatedAt=new Date().toISOString();
+    order.trackingActive=false;
+    order.deliveredAt=new Date().toISOString();
+  }else{
+    return json(res,400,{ok:false,message:'حالة المندوب غير صحيحة'});
+  }
   db.revision=(db.revision||1)+1;
   save(a.storeId,db);
   return json(res,200,{ok:true,order:{id:order.id,status:order.status}});
@@ -1291,6 +1316,7 @@ incoming.revision=(db.revision||1)+1;for(const u of incomingUsers){if(String(u.r
     'accepted',
     'preparing',
     'ready',
+    'driver_received',
     'out_for_delivery',
     'completed',
     'rejected'
@@ -1338,7 +1364,8 @@ incoming.revision=(db.revision||1)+1;for(const u of incomingUsers){if(String(u.r
     new:['accepted','rejected'],
     accepted:['preparing'],
     preparing:['ready'],
-    ready:['out_for_delivery','completed'],
+    ready:['driver_received','out_for_delivery','completed'],
+    driver_received:['out_for_delivery','completed'],
     out_for_delivery:['completed'],
     completed:[],
     rejected:[]
